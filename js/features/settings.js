@@ -237,6 +237,7 @@ const SettingsView = (() => {
           <div class="set-inline"><span>${t('Language')}</span><span class="muted">English</span></div>
         </section>
         <section class="set-group"><h2>${t('About')}</h2>
+          ${row('refresh', t('Refresh app'), t('Load the latest version. Your data stays.'), 'refresh')}
           ${row('versions', t('Version history'), 'RestroBar ' + APP_VERSION)}
           ${row('check', t('Self-check'), t('Test this device'))}
           ${row('homescreen', t('Add to Home Screen'), t('Recommended before you start'))}
@@ -251,6 +252,7 @@ const SettingsView = (() => {
     on('import', Share.importFile);
     on('backup', Share.backupNow);
     on('versions', versionsSheet);
+    on('refresh', (e) => App.refresh(e.currentTarget));
     on('check', selfCheck);
     on('homescreen', App.homeScreenTip);
     on('tour', () => { Store.setLocal({ tourDone: false }); UI.go('tour'); });

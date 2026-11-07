@@ -28,7 +28,8 @@ const UI = (() => {
     upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     chevron: '<path d="M9 18l6-6-6-6"/>',
-    lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'
+    lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    refresh: '<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/>'
   };
   const icon = (name, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || ''}</svg>`;
 
@@ -178,11 +179,12 @@ const UI = (() => {
   let pending = false;
   setInterval(() => { if (pending && !document.querySelector('.sheet-wrap')) { pending = false; softRender(); } }, 500);
 
-  const header = (title, { back = '', actions = '' } = {}) => `
+  // Main screens (no back arrow) get the refresh button, as in BasKar: a Home Screen app has no browser reload.
+  const header = (title, { back = '', actions = '', refresh = !back } = {}) => `
     <header class="top">
       ${back ? `<a class="icon-btn" href="#${back}" aria-label="${t('Back')}">${icon('back')}</a>` : ''}
       <h1>${Util.esc(title)}</h1>
-      <div class="top-actions">${actions}</div>
+      <div class="top-actions">${actions}${refresh ? `<button type="button" class="icon-btn refresh-btn" data-refresh aria-label="${t('Refresh')}">${icon('refresh')}</button>` : ''}</div>
     </header>`;
 
   return { $, $$, icon, toast, hideToast, wireToast, open, confirm, ask, requirePin, route, go, render, softRender, current, header };

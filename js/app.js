@@ -145,6 +145,30 @@ const App = (() => {
     });
   };
 
+  // Refresh: save, fetch the latest version, reload. Data stays (it lives on the device).
+  // A reload ends live links, so on a linked device we ask first.
+  const refresh = async (btn) => {
+    if (btn && btn.classList.contains('spin')) return;
+    if (Link.connected().length && !(await UI.confirm(t('Refresh the app?'), t('This ends the live link. Scan the codes again afterwards. Nothing is lost.'), t('Refresh')))) return;
+    if (btn) { btn.classList.add('spin'); btn.setAttribute('aria-busy', 'true'); }
+    try { sessionStorage.setItem('rb_refreshed', '1'); } catch { /* private mode */ }
+    let gone = false;
+    const go = () => { if (gone) return; gone = true; try { location.reload(); } catch { /* blocked */ } };
+    try { await Store.flush(); } catch { /* still reload */ }
+    try {
+      const reg = navigator.serviceWorker && (await navigator.serviceWorker.getRegistration());
+      if (reg) await Promise.race([reg.update(), new Promise((r) => setTimeout(r, 2500))]);
+    } catch { /* offline or blocked */ }
+    try { fetch(location.href.split('#')[0], { cache: 'reload', credentials: 'same-origin' }).then(go, go); } catch { go(); }
+    setTimeout(go, 3000);
+    // If this host blocks reloading (some previews), say so instead of spinning forever.
+    setTimeout(() => {
+      if (btn) { btn.classList.remove('spin'); btn.removeAttribute('aria-busy'); }
+      try { sessionStorage.removeItem('rb_refreshed'); } catch { /* */ }
+      UI.render(); UI.toast(t('Refreshed'), { body: t('Your data was reloaded from this device.') });
+    }, 7000);
+  };
+
   const hideSplash = () => { const sp = UI.$('#splash'); if (sp) { sp.classList.add('gone'); setTimeout(() => sp.remove(), 400); } };
 
   const boot = async () => {
@@ -164,6 +188,13 @@ const App = (() => {
       });
       tabSync();
       UI.wireToast();
+      document.addEventListener('click', (e) => { const b = e.target.closest('[data-refresh]'); if (b) refresh(b); });
+      try {
+        if (sessionStorage.getItem('rb_refreshed')) {
+          sessionStorage.removeItem('rb_refreshed');
+          setTimeout(() => UI.toast(t('Refreshed'), { kind: 'good', body: t('Version {v}. Your data is still here.', { v: APP_VERSION }) }), 300);
+        }
+      } catch { /* private mode */ }
       Store.onSaveError = Util.debounce(() => UI.toast(t('Couldn\'t save'), {
         kind: 'bad', body: t('This device\'s storage is full or blocked. Back up now so today\'s orders are not lost.'),
         action: { label: t('Back up'), fn: Share.backupNow }
@@ -188,7 +219,7 @@ const App = (() => {
     }
   };
 
-  return { boot, applyLook, homeRoute, notices, wireNotices, homeScreenTip, badges, isStandalone };
+  return { boot, refresh, applyLook, homeRoute, notices, wireNotices, homeScreenTip, badges, isStandalone };
 })();
 
 App.boot();

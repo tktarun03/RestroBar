@@ -1,10 +1,18 @@
 // Single source of truth for the release number.
 // Must match ?v= on every CSS/JS link in index.html, VERSION in sw.js,
 // and the top entry of CHANGELOG.md (tests/structure.test.mjs checks all four).
-const APP_VERSION = '0.1.4';
+const APP_VERSION = '0.1.5';
 
 // Newest first. Shown in Settings → Version history and the "What's new" notice.
 const RELEASES = [
+  {
+    version: '0.1.5',
+    date: '2026-11-07',
+    notes: [
+      'Refresh button at the top of every main screen and in Settings: loads the latest version, your data stays.',
+      'On a linked phone or tablet, Refresh asks first, because it ends the live link.'
+    ]
+  },
   {
     version: '0.1.4',
     date: '2026-11-07',

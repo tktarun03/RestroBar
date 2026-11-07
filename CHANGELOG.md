@@ -2,6 +2,12 @@
 
 Newest first. Every release also gets an entry in `RELEASES` in `js/core/version.js` (shown in the app under Settings → Version history).
 
+## 0.1.5 (2026-11-07)
+
+- Refresh button (BasKar pattern) in the header of main screens and as Settings → Refresh app: saves, asks the service worker to update, fetches the page uncached, reloads; a "Refreshed" notice confirms after reload. If the host blocks reloading, a fallback notice after 7 s.
+- Refresh asks for confirmation when a live link is open, since a reload ends it.
+- Tests in `tests/e2e/refresh.spec.js`.
+
 ## 0.1.4 (2026-11-07)
 
 - Notices follow the BasKar pattern: `UI.toast(title, { kind, body, undo | action, duration })` with title, body, one button, ✕, 4.5 s / 7 s with a button / 6 s for errors, pause on touch, slide animation, reduced-motion aware, `role="alert"` for errors.

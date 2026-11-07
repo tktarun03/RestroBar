@@ -219,6 +219,9 @@ body.no-tabs .toast { bottom: calc(88px + var(--sab)); }
 .toast :focus-visible { outline-color: var(--notif-ink); }
 .toast.show { animation: toastUp .32s cubic-bezier(.2, .8, .2, 1); }
 .toast.out { animation: toastDown .22s ease-in forwards; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin .ic, .spin svg { animation: spin .8s linear infinite; }
+.refresh-btn { color: var(--muted); }
 @keyframes toastUp { from { transform: translate(-50%, 24px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 @keyframes toastDown { to { transform: translate(-50%, 24px); opacity: 0; } }
 .sheet-wrap { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
