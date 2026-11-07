@@ -2,7 +2,7 @@
 
 Restaurant ordering, kitchen display and billing that runs in the browser and works offline.
 
-**Open the app:** https://tktarun03.github.io/restrobar/
+**Open the app:** https://tktarun03.github.io/RestroBar/
 
 - Waiters take orders on their phones, with notes per dish.
 - The kitchen tablet shows each order as a ticket with a timer; the cook marks dishes ready.

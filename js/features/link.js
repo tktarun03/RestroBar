@@ -47,6 +47,7 @@ const Link = (() => {
       send(p, { type: 'sync', changes: snapshot() });
       changed();
     } else if (m.type === 'sync' || m.type === 'changes') {
+      if (m.type === 'sync') p.synced = true;
       Store.merge(m.changes, { peer: p.key, source: 'link' });
     } else if (m.type === 'ping') {
       send(p, { type: 'pong' });
@@ -80,13 +81,27 @@ const Link = (() => {
 
   const attach = (p, dc) => {
     p.dc = dc;
-    dc.onopen = () => {
+    let greeted = false;
+    const hello = () => send(p, { type: 'hello', id: Store.local.deviceId, name: Store.local.deviceName, role: Store.local.role });
+    const opened = () => {
+      if (greeted) return; greeted = true;
       p.state = 'open'; p.lastPong = Util.now();
-      send(p, { type: 'hello', id: Store.local.deviceId, name: Store.local.deviceName, role: Store.local.role });
+      hello();
+      // The first messages can be lost while the other side is still wiring up its channel.
+      // Every hello is answered with a snapshot, so keep saying hello until a snapshot arrives.
+      let tries = 0;
+      const retry = setInterval(() => {
+        if (p.synced || p.state !== 'open' || ++tries > 20) { clearInterval(retry); return; }
+        hello();
+      }, 1000);
       changed();
     };
+    dc.onopen = opened;
     dc.onclose = () => { p.state = 'closed'; changed(); };
-    dc.onmessage = (e) => onMessage(p, e.data);
+    // A message proves the channel is open even if the open event was missed.
+    dc.onmessage = (e) => { if (!greeted && dc.readyState === 'open') opened(); onMessage(p, e.data); };
+    // On the answering side the channel can already be open when it is handed over.
+    if (dc.readyState === 'open') opened();
   };
 
   const newPeer = () => {
@@ -224,7 +239,7 @@ const Link = (() => {
     const role = Store.local.role;
     const list = [...peers.values()].filter((p) => p.name || p.state === 'open');
     el.innerHTML = `
-      ${UI.header(t('Linked devices'), { back: 'settings' })}
+      ${UI.header(t('Linked devices'), { back: 'more' })}
       <div class="page">
         ${!supported() ? `<p class="banner warn">${t('This browser cannot make live links. Use Share and QR codes instead.')}</p>` : ''}
         ${role === 'solo' ? `
@@ -235,7 +250,7 @@ const Link = (() => {
             <li><span>${t('Name')}</span><span>${Util.esc(Store.local.deviceName)}</span></li>
             <li><span>${t('Role')}</span><span>${t({ solo: 'One device does everything', hub: 'Main kitchen tablet', waiter: 'Waiter phone' }[role])}</span></li>
           </ul>
-          <a class="btn link" href="#settings">${t('Change in Settings')}</a>
+          <a class="btn link" href="#more">${t('Change in Settings')}</a>
         </section>
         ${role === 'hub' ? `
           <button class="btn primary block" data-act="host" ${supported() ? '' : 'disabled'}>${UI.icon('qr')} ${t('Add a waiter phone')}</button>` : ''}

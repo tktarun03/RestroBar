@@ -257,6 +257,6 @@ const SettingsView = (() => {
     el.querySelectorAll('[data-size]').forEach((b) => { b.onclick = () => { Store.setLocal({ textSize: +b.dataset.size }); App.applyLook(); }; });
   };
 
-  UI.route('settings', view);
+  UI.route('more', view); // not '#settings': claude.ai reserves that hash when mirrored as an artifact
   return { selfCheck };
 })();

@@ -1,10 +1,19 @@
 // Single source of truth for the release number.
 // Must match ?v= on every CSS/JS link in index.html, VERSION in sw.js,
 // and the top entry of CHANGELOG.md (tests/structure.test.mjs checks all four).
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '0.1.1';
 
 // Newest first. Shown in Settings → Version history and the "What's new" notice.
 const RELEASES = [
+  {
+    version: '0.1.1',
+    date: '2026-11-07',
+    notes: [
+      'Fixed: a waiter phone could link to the kitchen tablet but not receive the menu and restaurant name.',
+      'Messages now appear at the top of the screen so they never cover the Send or Pay buttons.',
+      'The backup reminder waits until you have a day of sales.'
+    ]
+  },
   {
     version: '0.1.0',
     date: '2026-11-07',

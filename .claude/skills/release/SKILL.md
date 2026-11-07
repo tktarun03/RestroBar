@@ -19,5 +19,5 @@ description: Ship a new RestroBar version to GitHub Pages - release notes, versi
 6. **Commit and push to `main`.**
 7. **Verify the deploy**: poll until both runs succeed for the pushed commit:
    `gh api "repos/tktarun03/restrobar/actions/runs?head_sha=$(git rev-parse HEAD)" --jq '.workflow_runs[] | [.name, .status, .conclusion] | @tsv'`
-   Expect the CI workflow (jobs "Tests" then "Deploy") to conclude `success`. Then open https://tktarun03.github.io/restrobar/ and check Settings → Version history shows the new version.
+   Expect the CI workflow (jobs "Tests" then "Deploy") to conclude `success`. Then open https://tktarun03.github.io/RestroBar/ and check Settings → Version history shows the new version.
 8. **Report briefly, flaws first**, with [Certain]/[Likely]/[Guessing], and say what was tested in a browser versus on a real phone.

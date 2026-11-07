@@ -43,7 +43,7 @@ const Tables = (() => {
       [t('Send an order to the kitchen'), orders.some((o) => o.lines.some((l) => l.status !== 'draft')), ''],
       [t('Take a first payment'), orders.some((o) => o.status === 'paid'), ''],
       ...(L.role === 'solo' ? [] : [[t('Link a phone to the kitchen tablet'), L.everLinked, '#links']]),
-      [t('Make a backup'), !!L.lastBackupAt, '#settings']
+      [t('Make a backup'), !!L.lastBackupAt, '#more']
     ];
     const done = steps.filter((s) => s[1]).length;
     if (done === steps.length) return '';
@@ -84,7 +84,7 @@ const Tables = (() => {
             }).join('')}
           </section>` : ''}
         ${checklist()}
-        ${tables.length ? '' : `<div class="empty">${t('No tables yet.')} <a href="#settings">${t('Add tables in Settings')}</a></div>`}
+        ${tables.length ? '' : `<div class="empty">${t('No tables yet.')} <a href="#more">${t('Add tables in Settings')}</a></div>`}
         <div class="table-grid">
           ${tables.map((tb) => {
             const o = Store.openOrderFor(tb.id);

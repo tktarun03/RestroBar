@@ -23,7 +23,8 @@ const Share = (() => {
     if (canShareFiles([f])) {
       try { await navigator.share({ files: [f], title }); return true; } catch (e) { if (e && e.name === 'AbortError') return false; }
     }
-    try {
+    // Preview builds (claude.ai artifact) block downloads silently, so go straight to the copy box there.
+    if (!window.RESTROBAR_PREVIEW) try {
       const url = URL.createObjectURL(f);
       const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 4000);

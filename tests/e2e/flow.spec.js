@@ -70,7 +70,7 @@ test('order to kitchen to bill', async ({ page }) => {
   await noSideScroll(page);
 
   // Settings and self-check render
-  await page.locator('#tabs [data-go=settings]').click();
+  await page.locator('#tabs [data-go=more]').click();
   await noSideScroll(page);
   await page.getByRole('button', { name: /Self-check/ }).click();
   await expect(page.locator('.checks li.ok', { hasText: 'Bill maths' })).toHaveCount(1);

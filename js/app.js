@@ -30,7 +30,7 @@ const App = (() => {
       ['kitchen', t('Kitchen'), 'kitchen', ''],
       ['reports', t('Sales'), 'receipt', ''],
       ['menu', t('Menu'), 'menu', ''],
-      ['settings', t('Settings'), 'settings', 'links']
+      ['more', t('Settings'), 'settings', 'links']
     ];
     // Kitchen tablet starts on Kitchen; waiter phones rarely need the kitchen tab but keep it reachable.
     const ordered = role === 'hub' ? [list[1], list[0], list[2], list[3], list[4]] : list;
