@@ -20,4 +20,5 @@ description: Ship a new RestroBar version to GitHub Pages - release notes, versi
 7. **Verify the deploy**: poll until both runs succeed for the pushed commit:
    `gh api "repos/tktarun03/restrobar/actions/runs?head_sha=$(git rev-parse HEAD)" --jq '.workflow_runs[] | [.name, .status, .conclusion] | @tsv'`
    Expect the CI workflow (jobs "Tests" then "Deploy") to conclude `success`. Then open https://tktarun03.github.io/RestroBar/ and check Settings → Version history shows the new version.
-8. **Report briefly, flaws first**, with [Certain]/[Likely]/[Guessing], and say what was tested in a browser versus on a real phone.
+8. **Republish the preview artifact** to the same URL (https://claude.ai/artifact/Mi2gRj4TZ8okfmjkQQv5j3): `node tools/artifact.mjs <dir>`, then publish `<dir>/index.html` with every path in `<dir>/files.json` as supporting files, passing that URL.
+9. **Report briefly, flaws first**, with [Certain]/[Likely]/[Guessing], and say what was tested in a browser versus on a real phone.

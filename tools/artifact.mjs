@@ -20,7 +20,8 @@ let page = [
   css,
   // The host already pads :root top/bottom by the safe-area insets.
   '<style>:root{--sat:0px;--sab:0px}</style>',
-  '<script>window.RESTROBAR_PREVIEW = true;</script>',
+  // The artifact frame blocks WebRTC; hide it so the app shows its "not available here" message.
+  '<script>window.RESTROBAR_PREVIEW = true; try { window.RTCPeerConnection = undefined; } catch (e) {}</script>',
   body.trim()
 ].join('\n');
 page = page.replace(/\?v=[\w.-]+/g, '');

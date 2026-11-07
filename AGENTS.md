@@ -70,7 +70,7 @@ The in-app self-check (Settings → Self-check) runs on the phone itself.
 
 ## Release and deploy
 
-Follow `.claude/skills/release/SKILL.md`. Short version: add release notes (RELEASES + CHANGELOG), bump the version everywhere (`version.js`, every `?v=` in `index.html`, `sw.js` VERSION, `package.json`), run tests, commit, push to `main`, and confirm both the "Tests" and "Deploy" GitHub Actions runs succeed. Pages deploys only after tests pass.
+Follow `.claude/skills/release/SKILL.md`. Short version: add release notes (RELEASES + CHANGELOG), bump the version everywhere (`version.js`, every `?v=` in `index.html`, `sw.js` VERSION, `package.json`), run tests, commit, push to `main`, and confirm both the "Tests" and "Deploy" GitHub Actions runs succeed. Pages deploys only after tests pass. A one-device preview is mirrored as a Claude artifact (https://claude.ai/artifact/Mi2gRj4TZ8okfmjkQQv5j3); republish it after every release with `tools/artifact.mjs`.
 
 ## Known sharp edges
 
