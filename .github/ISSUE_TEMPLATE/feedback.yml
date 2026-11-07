@@ -1,0 +1,30 @@
+name: Feedback or idea
+description: Tell us what works, what doesn't, or what you need.
+labels: [feedback]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like to tell us?
+    validations:
+      required: true
+  - type: dropdown
+    id: rating
+    attributes:
+      label: How useful is RestroBar for your restaurant?
+      options: ['5 – very', '4', '3', '2', '1 – not at all']
+  - type: input
+    id: role
+    attributes:
+      label: Device role
+      description: Filled in by the app (solo, hub or waiter).
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Filled in by the app.
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      description: Filled in by the app. Remove it if you prefer.
