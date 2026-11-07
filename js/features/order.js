@@ -21,14 +21,24 @@ const OrderView = (() => {
 
   const sendToKitchen = (orderId) => {
     const by = Store.local.deviceName;
-    let n = 0;
+    let n = 0; let kot = 0; const ids = [];
     Store.updateOrder(orderId, (d) => {
       const drafts = d.lines.filter((l) => l.status === 'draft');
       if (!drafts.length) return;
       d.kotSeq += 1;
-      for (const l of drafts) { l.status = 'sent'; l.sentAt = Util.now(); l.kot = d.kotSeq; l.sentBy = by; n += l.qty; }
+      for (const l of drafts) { l.status = 'sent'; l.sentAt = Util.now(); l.kot = d.kotSeq; l.sentBy = by; n += l.qty; ids.push(l.id); kot = d.kotSeq; }
     });
-    if (n) { UI.toast(t('Sent {n} items to the kitchen', { n }), 'good'); Link.nudge(); }
+    if (!n) return;
+    const o = Store.order(orderId); const tb = Store.table(o.tableId);
+    // Undo while the kitchen has not started: the dishes go back to "not sent".
+    const undo = () => Store.updateOrder(orderId, (d) => {
+      for (const l of d.lines) if (ids.includes(l.id) && l.status === 'sent') { l.status = 'draft'; l.sentAt = 0; l.kot = 0; l.sentBy = ''; }
+    });
+    if (!Link.linkedOrSolo()) {
+      UI.toast(t('Not received by the kitchen yet'), { kind: 'bad', body: t('This phone is not linked. Relink, or send this order by QR.'), action: { label: t('Send by QR'), fn: () => Share.sendOrder(orderId) } });
+    } else {
+      UI.toast(n === 1 ? t('Sent 1 item to the kitchen') : t('Sent {n} items to the kitchen', { n }), { kind: 'good', body: `${tb ? tb.name : ''} · KOT ${kot}`, undo });
+    }
   };
 
   const qtyOf = (o, itemId) => o ? o.lines.filter((l) => l.itemId === itemId && l.status !== 'void').reduce((s, l) => s + l.qty, 0) : 0;
@@ -70,15 +80,23 @@ const OrderView = (() => {
           Store.updateOrder(orderId, (d) => { const x = d.lines.find((y) => y.id === lineId); if (x) { x.qty = qty; x.note = note; } });
           close();
         });
-        on('remove', () => { Store.updateOrder(orderId, (d) => { d.lines = d.lines.filter((y) => y.id !== lineId); }); close(); });
+        // Removed dishes are kept as hidden void lines, so the removal also reaches linked devices.
+        on('remove', () => {
+          Store.updateOrder(orderId, (d) => { const x = d.lines.find((y) => y.id === lineId); if (x) { x.status = 'void'; x.removed = true; } });
+          close();
+          UI.toast(t('Removed {name}', { name: l.name }), { undo: () => Store.updateOrder(orderId, (d) => { const x = d.lines.find((y) => y.id === lineId); if (x && x.removed) { x.status = 'draft'; x.removed = false; } }) });
+        });
         on('served', () => { Tables.markServed(orderId, [lineId]); close(); });
         on('void', async () => {
           close();
           if (!(await UI.requirePin(t('Admin PIN to void')))) return;
           const why = await UI.ask(t('Reason for voiding'), { placeholder: t('e.g. customer changed mind'), okLabel: t('Void item') });
           if (why === null) return;
+          const was = l.status;
           Store.updateOrder(orderId, (d) => { const x = d.lines.find((y) => y.id === lineId); if (x) { x.status = 'void'; x.voidReason = why.trim(); x.voidAt = Util.now(); x.voidBy = Store.local.deviceName; } });
-          UI.toast(t('Item voided'));
+          UI.toast(t('Voided {qty}× {name}', { qty: l.qty, name: l.name }), { body: why.trim() || undefined, undo: () => Store.updateOrder(orderId, (d) => {
+            const x = d.lines.find((y) => y.id === lineId); if (x && x.status === 'void') { x.status = was; x.voidReason = ''; x.voidAt = 0; x.voidBy = ''; }
+          }) });
         });
       }
     });
@@ -122,9 +140,13 @@ const OrderView = (() => {
       <button class="btn ghost block" data-close>${t('Close')}</button>`, {
       onMount: (el, close) => {
         el.querySelectorAll('[data-to]').forEach((b) => { b.onclick = () => {
+          const from = Store.order(orderId).tableId; const to = Store.table(b.dataset.to);
           Store.updateOrder(orderId, (d) => { d.tableId = b.dataset.to; });
           close(); UI.go('table-' + b.dataset.to);
-          UI.toast(t('Order moved'));
+          UI.toast(t('Moved to {table}', { table: to ? to.name : '' }), { undo: () => {
+            if (Store.openOrderFor(from)) { UI.toast(t('The old table is busy now'), 'bad'); return; }
+            Store.updateOrder(orderId, (d) => { d.tableId = from; }); UI.go('table-' + from);
+          } });
         }; });
       }
     });
@@ -165,9 +187,10 @@ const OrderView = (() => {
   };
 
   const orderPane = (o, s) => {
-    if (!o || !o.lines.length) return `<div class="empty">${t('No dishes yet. Add from the menu.')}</div>`;
-    const drafts = o.lines.filter((l) => l.status === 'draft');
-    const sent = o.lines.filter((l) => l.status !== 'draft');
+    const shown = o ? o.lines.filter((l) => !l.removed) : [];
+    if (!shown.length) return `<div class="empty">${t('No dishes yet. Add from the menu.')}</div>`;
+    const drafts = shown.filter((l) => l.status === 'draft');
+    const sent = shown.filter((l) => l.status !== 'draft');
     const L = LINE_LABEL();
     const row = (l) => `
       <button class="line st-${l.status}" data-line="${l.id}">

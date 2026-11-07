@@ -10,6 +10,7 @@ description: Change or add a RestroBar screen safely - mobile Safari rules, toke
 3. Mobile Safari rules: inputs ≥16px font, tap targets ≥44px, no text under 11px, `env(safe-area-inset-*)` for edges, flex + inner scroll instead of `100vh`.
 4. All visible text through `t('English text', { vars })`. User data (dish, table names) goes in through `Util.esc`, never inside the translated sentence.
 5. Use `UI.open`, `UI.confirm`, `UI.ask`, `UI.requirePin` for dialogs. Never `alert/confirm/prompt`.
+   After an action that changes data, show a notice with `UI.toast(title, { body, undo })`; follow `.claude/skills/toasts/SKILL.md`.
 6. Re-renders replace the DOM. If a field updates live while typing, update that element in place (see the search box in `order.js`).
 7. Use logical CSS (`margin-inline`, `inset-inline-start`) so right-to-left works later.
 8. Run `npm test`. For a new screen, add steps to `tests/e2e/flow.spec.js` and call `noSideScroll(page)` on it.

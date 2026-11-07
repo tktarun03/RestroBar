@@ -138,8 +138,12 @@ const Kitchen = (() => {
     el.querySelectorAll('[data-stage]').forEach((b) => {
       b.onclick = () => {
         const tk = all.find((x) => x.key === b.dataset.key); if (!tk) return;
+        const before = Object.fromEntries(tk.lines.map((l) => [l.id, l.status]));
         setLines(tk.o.id, tk.lines.map((l) => l.id), b.dataset.stage);
-        if (b.dataset.stage === 'ready') UI.toast(t('Waiter notified'), 'good');
+        const tb = Store.table(tk.o.tableId);
+        const undo = () => Store.updateOrder(tk.o.id, (d) => { for (const l of d.lines) if (before[l.id] && l.status === b.dataset.stage) l.status = before[l.id]; });
+        if (b.dataset.stage === 'ready') UI.toast(t('Waiter notified'), { kind: 'good', body: `${tb ? tb.name : ''} · KOT ${tk.kot}`, undo });
+        else UI.toast(t('Cooking {table}', { table: tb ? tb.name : '' }), { undo });
       };
     });
     const snd = el.querySelector('[data-act=sound]');

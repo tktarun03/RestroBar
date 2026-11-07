@@ -176,7 +176,11 @@ const Bill = (() => {
       if (payState.method !== 'cash' && amt > b.due) { UI.toast(t('Card and online payments cannot be more than the amount due'), 'bad'); return; }
       Store.updateOrder(orderId, (d) => { d.payments.push({ method: payState.method, amount: amt, at: Util.now(), by: Store.local.deviceName }); });
     });
-    el.querySelectorAll('[data-unpay]').forEach((x) => { x.onclick = () => Store.updateOrder(orderId, (d) => { d.payments.splice(+x.dataset.unpay, 1); }); });
+    el.querySelectorAll('[data-unpay]').forEach((x) => { x.onclick = () => {
+      const i = +x.dataset.unpay; const p = Store.order(orderId).payments[i];
+      Store.updateOrder(orderId, (d) => { d.payments.splice(i, 1); });
+      UI.toast(t('Payment removed'), { body: `${methodName(p.method)} ${Util.money(p.amount, s)}`, undo: () => Store.updateOrder(orderId, (d) => { if (d.status === 'open') d.payments.splice(i, 0, p); }) });
+    }; });
     on('close', () => {
       const billNo = nextBillNo();
       const fresh = Billing.calc(Store.order(orderId), s);
@@ -187,7 +191,7 @@ const Bill = (() => {
         d.lines = d.lines.filter((l) => l.status !== 'draft');
         for (const l of d.lines) if (['sent', 'preparing', 'ready'].includes(l.status)) { l.status = 'served'; l.servedAt = Util.now(); }
       });
-      UI.toast(t('Bill {no} closed', { no: billNo }), 'good');
+      UI.toast(t('Bill {no} closed', { no: billNo }), { kind: 'good', body: t('{table} is free again.', { table: Store.table(o.tableId) ? Store.table(o.tableId).name : '' }) });
     });
     on('show-qr', () => PayQR.showToCustomer(Util.toMinor(parseFloat(el.querySelector('#p-amt').value) || 0, s.currency) || b.due, billNote(o)));
     on('print', () => print());

@@ -33,14 +33,51 @@ const UI = (() => {
   const icon = (name, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || ''}</svg>`;
 
   // ---------- toast ----------
-  let toastTimer;
-  const toast = (msg, kind = '') => {
-    const el = $('#toast');
-    el.textContent = msg;
-    el.className = 'toast show ' + kind;
+  // UI.toast(title, opts) — the one bottom notice (same pattern as BasKar).
+  //   opts: 'good' | 'bad' (legacy kind), or { kind, body, undo: fn, action: { label, fn }, duration }
+  //   · title says what happened, body (optional) says what it means or what to do next.
+  //   · undo/action adds one button; the notice then stays 7 s instead of 4.5 s (errors 6 s).
+  //   · ✕ dismisses. A finger or mouse on the notice pauses the timer.
+  //   · A new toast replaces the old one; an undo that is replaced is simply not offered any more.
+  let toastTimer = null; let toastOut = null; let toastFn = null; let toastLeft = 0; let toastStarted = 0;
+  const reduceMotion = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hideToast = () => {
+    const el = $('#toast'); if (!el || el.hidden) return;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { el.className = 'toast'; }, 2600);
+    el.classList.remove('show'); el.classList.add('out');
+    clearTimeout(toastOut);
+    toastOut = setTimeout(() => { el.hidden = true; el.classList.remove('out'); toastFn = null; }, reduceMotion() ? 0 : 220);
   };
+  const armToast = (ms) => { clearTimeout(toastTimer); toastLeft = ms; toastStarted = Date.now(); toastTimer = setTimeout(hideToast, ms); };
+  const toast = (title, opts = {}) => {
+    if (typeof opts === 'string') opts = { kind: opts };
+    const el = $('#toast'); if (!el) return;
+    const kind = opts.kind || '';
+    toastFn = opts.undo || (opts.action && opts.action.fn) || null;
+    const label = opts.action ? opts.action.label : t('Undo');
+    const mark = kind === 'good' ? icon('check') : kind === 'bad' ? icon('x') : '';
+    el.className = 'toast ' + kind;
+    el.setAttribute('role', kind === 'bad' ? 'alert' : 'status');
+    el.innerHTML = `${mark ? `<span class="toast-ic">${mark}</span>` : ''}
+      <div class="toast-body"><strong>${Util.esc(title)}</strong>${opts.body ? `<span>${Util.esc(opts.body)}</span>` : ''}</div>
+      ${toastFn ? `<button type="button" class="toast-act" data-toast="act">${Util.esc(label)}</button>` : ''}
+      <button type="button" class="toast-x" data-toast="close" aria-label="${t('Dismiss')}">${icon('x')}</button>`;
+    clearTimeout(toastOut);
+    el.hidden = false; el.classList.remove('show', 'out'); void el.offsetWidth; el.classList.add('show');
+    armToast(opts.duration || (toastFn ? 7000 : kind === 'bad' ? 6000 : 4500));
+  };
+  const wireToast = () => {
+    const el = $('#toast'); if (!el || el.dataset.wired) return;
+    el.dataset.wired = '1';
+    el.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-toast]'); if (!b) return;
+      const fn = toastFn; hideToast();
+      if (b.dataset.toast === 'act' && fn) setTimeout(fn, 60);
+    });
+    el.addEventListener('pointerenter', () => { clearTimeout(toastTimer); toastLeft = Math.max(1500, toastLeft - (Date.now() - toastStarted)); });
+    el.addEventListener('pointerleave', () => { if (!el.hidden) armToast(toastLeft); });
+  };
+  if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', wireToast);
 
   // ---------- modal sheet ----------
   // open(html, {onMount}) → returns {close, el}. Resolves via your own buttons.
@@ -148,5 +185,5 @@ const UI = (() => {
       <div class="top-actions">${actions}</div>
     </header>`;
 
-  return { $, $$, icon, toast, open, confirm, ask, requirePin, route, go, render, softRender, current, header };
+  return { $, $$, icon, toast, hideToast, wireToast, open, confirm, ask, requirePin, route, go, render, softRender, current, header };
 })();

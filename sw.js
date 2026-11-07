@@ -1,6 +1,6 @@
 // Offline support. VERSION must equal APP_VERSION (tests check it).
 // The page itself is network-first (so updates arrive), versioned assets are cache-first.
-const VERSION = '0.1.3';
+const VERSION = '0.1.4';
 const CACHE = 'restrobar-' + VERSION;
 const V = '?v=' + VERSION;
 const ASSETS = [

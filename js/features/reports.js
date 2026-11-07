@@ -23,7 +23,7 @@ const Reports = (() => {
       }
     }
     const voids = [];
-    for (const o of Store.orders()) for (const l of o.lines) if (l.status === 'void' && l.voidAt && Util.dayKey(l.voidAt) === key) voids.push({ o, l });
+    for (const o of Store.orders()) for (const l of o.lines) if (l.status === 'void' && !l.removed && l.voidAt && Util.dayKey(l.voidAt) === key) voids.push({ o, l });
     const open = Store.orders().filter((o) => o.status === 'open');
     return { paid, sum, methods, items: Object.entries(items).sort((a, b) => b[1].qty - a[1].qty), voids, open };
   };

@@ -291,7 +291,7 @@ const Setup = (() => {
     if (withDemo) Demo.loadMenu();
     draft = null; step = 0;
     App.applyLook();
-    UI.toast(t('All set. Tap a table to take an order.'));
+    UI.toast(t('All set'), { kind: 'good', body: d.role === 'hub' ? t('New orders will appear here as tickets.') : t('Tap a table to take an order.') });
     UI.go(App.homeRoute());
   };
 

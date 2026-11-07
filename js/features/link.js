@@ -72,12 +72,24 @@ const Link = (() => {
       for (const p of peers.values()) {
         if (p.state !== 'open') continue;
         send(p, { type: 'ping' });
-        if (Util.now() - (p.lastPong || 0) > 30000) { p.state = 'lost'; changed(); }
+        if (Util.now() - (p.lastPong || 0) > 30000) drop(p, 'lost');
       }
     }, 10000);
   };
 
   const changed = Util.debounce(() => UI.softRender(), 100);
+
+  // A live link went down: say so once, with a way to relink. Nothing is lost meanwhile.
+  let quiet = false; // true while we close links on purpose
+  const drop = (p, state) => {
+    const wasOpen = p.state === 'open';
+    p.state = state; changed();
+    if (!wasOpen || quiet) return;
+    UI.toast(t('Lost link to {name}', { name: p.name || t('a device') }), {
+      kind: 'bad', body: t('Orders stay on this device and merge when you relink.'),
+      action: { label: t('Relink'), fn: () => (Store.local.role === 'waiter' ? joinFlow() : UI.go('links')) }
+    });
+  };
 
   const attach = (p, dc) => {
     p.dc = dc;
@@ -97,7 +109,7 @@ const Link = (() => {
       changed();
     };
     dc.onopen = opened;
-    dc.onclose = () => { p.state = 'closed'; changed(); };
+    dc.onclose = () => drop(p, 'closed');
     // A message proves the channel is open even if the open event was missed.
     dc.onmessage = (e) => { if (!greeted && dc.readyState === 'open') opened(); onMessage(p, e.data); };
     // On the answering side the channel can already be open when it is handed over.
@@ -108,8 +120,8 @@ const Link = (() => {
     const pc = new RTCPeerConnection({ iceServers: [] }); // same Wi-Fi only, nothing leaves the network
     const p = { key: Util.uid(), pc, dc: null, name: '', role: '', state: 'pairing', lastPong: 0 };
     pc.onconnectionstatechange = () => {
-      if (['failed', 'closed'].includes(pc.connectionState)) { p.state = 'closed'; changed(); }
-      if (pc.connectionState === 'disconnected') { p.state = 'lost'; changed(); }
+      if (['failed', 'closed'].includes(pc.connectionState)) drop(p, 'closed');
+      if (pc.connectionState === 'disconnected') drop(p, 'lost');
     };
     peers.set(p.key, p);
     return p;
@@ -177,8 +189,9 @@ const Link = (() => {
     if (!supported()) return notSupported();
     wireOutgoing();
     // One hub at a time: drop old links first.
-    for (const old of peers.values()) { try { old.pc.close(); } catch { /* */ } }
-    peers.clear();
+    quiet = true;
+    for (const old of peers.values()) { old.state = 'closing'; try { old.pc.close(); } catch { /* */ } }
+    peers.clear(); quiet = false;
     QR.scanSheet(t('Scan the kitchen tablet\'s code'), async (txt) => {
       let m;
       try { m = await QR.unpack(txt); } catch (e) { UI.toast(e.message, 'bad'); return false; }
@@ -214,8 +227,9 @@ const Link = (() => {
   };
 
   const disconnectAll = () => {
-    for (const p of peers.values()) { try { p.pc.close(); } catch { /* */ } }
-    peers.clear(); changed();
+    quiet = true;
+    for (const p of peers.values()) { p.state = 'closing'; try { p.pc.close(); } catch { /* */ } }
+    peers.clear(); changed(); quiet = false;
   };
 
   // ---------- small UI bits ----------
@@ -227,12 +241,8 @@ const Link = (() => {
     return `<a class="pill ${n ? 'ok' : 'bad'}" href="#links">${UI.icon('wifi')} ${n ? t('Linked') : t('Not linked')}</a>`;
   };
 
-  // Called after sending to the kitchen: warn a waiter whose link is down.
-  const nudge = () => {
-    if (Store.local.role === 'waiter' && !connected().length) {
-      UI.toast(t('Not linked: the kitchen has not received this. Relink or send by QR.'), 'bad');
-    }
-  };
+  // A waiter phone with no live link: the kitchen will not see what it sends.
+  const linkedOrSolo = () => Store.local.role !== 'waiter' || connected().length > 0;
 
   const view = (el) => {
     document.body.classList.remove('no-tabs');
@@ -279,5 +289,5 @@ const Link = (() => {
   };
 
   UI.route('links', view);
-  return { hostFlow, joinFlow, statusPill, nudge, connected, supported, disconnectAll };
+  return { hostFlow, joinFlow, statusPill, linkedOrSolo, connected, supported, disconnectAll };
 })();

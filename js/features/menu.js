@@ -38,6 +38,7 @@ const MenuView = (() => {
           close();
           if (await UI.confirm(t('Delete {name}?', { name: item.name }), t('Past bills keep the dish name and price.'), t('Delete'), true)) {
             Store.putItem(Object.assign({}, item, { deleted: true }));
+            UI.toast(t('Deleted {name}', { name: item.name }), { undo: () => Store.putItem(Object.assign({}, Store.shared.items[item.id], { deleted: false })) });
           }
         };
       }
@@ -68,7 +69,10 @@ const MenuView = (() => {
           const n = Store.items().filter((i) => i.catId === cat.id).length;
           close();
           if (n) { UI.toast(t('Move or delete its {n} dishes first', { n }), 'bad'); return; }
-          if (await UI.confirm(t('Delete {name}?', { name: cat.name }), '', t('Delete'), true)) Store.putCategory(Object.assign({}, cat, { deleted: true }));
+          if (await UI.confirm(t('Delete {name}?', { name: cat.name }), '', t('Delete'), true)) {
+            Store.putCategory(Object.assign({}, cat, { deleted: true }));
+            UI.toast(t('Deleted {name}', { name: cat.name }), { undo: () => Store.putCategory(Object.assign({}, Store.shared.categories[cat.id], { deleted: false })) });
+          }
         };
       }
     });
@@ -112,14 +116,17 @@ const MenuView = (() => {
     const on = (a, fn) => el.querySelectorAll(`[data-act=${a}]`).forEach((b) => { b.onclick = fn; });
     on('add-item', () => itemSheet({ catId: (cats[0] || {}).id, available: true }));
     on('add-cat', () => catSheet({}));
-    on('demo', () => { Demo.loadMenu(); UI.toast(t('Sample menu added')); });
+    on('demo', () => { Demo.loadMenu(); UI.toast(t('Sample menu added'), { kind: 'good', body: t('Edit prices or switch dishes off any time.') }); });
     el.querySelectorAll('[data-cat]').forEach((b) => { b.onclick = () => catSheet(Store.shared.categories[b.dataset.cat]); });
     el.querySelectorAll('[data-item]').forEach((b) => { b.onclick = () => itemSheet(Store.shared.items[b.dataset.item]); });
     el.querySelectorAll('[data-avail]').forEach((b) => {
       b.onchange = () => {
         const it = Store.shared.items[b.dataset.avail];
         Store.putItem(Object.assign({}, it, { available: b.checked }));
-        UI.toast(b.checked ? t('{name} is back on', { name: it.name }) : t('{name} marked sold out', { name: it.name }));
+        UI.toast(b.checked ? t('{name} is back on', { name: it.name }) : t('{name} marked sold out', { name: it.name }), {
+          body: b.checked ? undefined : t('Waiters see it greyed out.'),
+          undo: () => Store.putItem(Object.assign({}, Store.shared.items[it.id], { available: !b.checked }))
+        });
       };
     });
   };

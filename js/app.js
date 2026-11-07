@@ -48,10 +48,6 @@ const App = (() => {
   // ---------- notices on the home screens ----------
   const notices = () => {
     const L = Store.local; const out = [];
-    const latest = RELEASES[0];
-    if (L.setupDone && L.seenVersion !== APP_VERSION && latest) {
-      out.push(`<div class="notice"><div class="grow"><b>${t('What\'s new in {v}', { v: latest.version })}</b><ul>${latest.notes.slice(0, 3).map((n) => `<li>${Util.esc(n)}</li>`).join('')}</ul></div><button class="icon-btn" data-notice="seen" aria-label="${t('Dismiss')}">${UI.icon('x')}</button></div>`);
-    }
     if (!isStandalone() && !sessionDismiss.home && L.setupDone) {
       out.push(`<div class="notice"><div class="grow"><b>${t('Add RestroBar to your Home Screen')}</b><small>${t('Opens full screen and works offline. Set up from the Home Screen icon: it keeps its own data.')}</small></div><button class="btn link small" data-notice="how">${t('How')}</button><button class="icon-btn" data-notice="home" aria-label="${t('Dismiss')}">${UI.icon('x')}</button></div>`);
     }
@@ -111,7 +107,7 @@ const App = (() => {
         lastStatus.set(l.id, l.status);
         if (meta.remote && l.status === 'ready' && was && was !== 'ready' && Store.local.role !== 'hub') {
           const tb = Store.table(c.rec.tableId);
-          UI.toast(t('{table}: {dish} is ready', { table: tb ? tb.name : '', dish: l.name }), 'good');
+          UI.toast(t('{table}: ready to serve', { table: tb ? tb.name : '' }), { kind: 'good', body: `${l.qty}× ${l.name}`, action: { label: t('View'), fn: () => UI.go('tables') } });
           ding();
         }
       }
@@ -167,6 +163,17 @@ const App = (() => {
         UI.softRender();
       });
       tabSync();
+      UI.wireToast();
+      Store.onSaveError = Util.debounce(() => UI.toast(t('Couldn\'t save'), {
+        kind: 'bad', body: t('This device\'s storage is full or blocked. Back up now so today\'s orders are not lost.'),
+        action: { label: t('Back up'), fn: Share.backupNow }
+      }), 1000);
+      // After an update: say so once, with the release notes one tap away (BasKar pattern).
+      if (Store.local.setupDone && Store.local.seenVersion !== APP_VERSION && RELEASES[0]) {
+        const first = !Store.local.seenVersion;
+        Store.setLocal({ seenVersion: APP_VERSION });
+        if (!first) setTimeout(() => UI.toast(t('Updated to version {v}', { v: APP_VERSION }), { body: RELEASES[0].notes[0], action: { label: t('What\'s new'), fn: SettingsView.versionsSheet } }), 500);
+      }
       window.addEventListener('hashchange', UI.render);
       if (!location.hash) history.replaceState(null, '', '#' + homeRoute());
       if (!Store.local.setupDone && !['tour', 'setup'].includes(UI.current().name)) location.hash = homeRoute();

@@ -1,10 +1,21 @@
 // Single source of truth for the release number.
 // Must match ?v= on every CSS/JS link in index.html, VERSION in sw.js,
 // and the top entry of CHANGELOG.md (tests/structure.test.mjs checks all four).
-const APP_VERSION = '0.1.3';
+const APP_VERSION = '0.1.4';
 
 // Newest first. Shown in Settings → Version history and the "What's new" notice.
 const RELEASES = [
+  {
+    version: '0.1.4',
+    date: '2026-11-07',
+    notes: [
+      'New notices with Undo: sending to the kitchen, marking ready or served, removing or voiding a dish, moving a table, sold-out switches and payments.',
+      'A notice tells you when a phone loses its link to the kitchen tablet, with a Relink button.',
+      'If this device cannot save, a notice asks you to back up straight away.',
+      'After an update, a notice shows what\'s new.',
+      'Fixed: a dish removed before sending could come back after syncing with another device.'
+    ]
+  },
   {
     version: '0.1.3',
     date: '2026-11-07',

@@ -30,7 +30,10 @@ const Tables = (() => {
     Store.updateOrder(orderId, (o) => {
       for (const l of o.lines) if (lineIds.includes(l.id) && l.status === 'ready') { l.status = 'served'; l.servedAt = Util.now(); }
     });
-    UI.toast(t('Marked as served'), 'good');
+    const tb = Store.table(Store.order(orderId).tableId);
+    UI.toast(t('Marked as served'), { kind: 'good', body: tb ? tb.name : '', undo: () => Store.updateOrder(orderId, (o) => {
+      for (const l of o.lines) if (lineIds.includes(l.id) && l.status === 'served') { l.status = 'ready'; l.servedAt = 0; }
+    }) });
   };
 
   const checklist = () => {

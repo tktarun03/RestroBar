@@ -44,16 +44,18 @@ const Store = (() => {
       try { const v = localStorage.getItem(DB_NAME + '.' + k); return v ? JSON.parse(v) : undefined; } catch { return undefined; }
     }
   };
+  // Returns false only when neither IndexedDB nor localStorage could save.
   const kvSet = async (k, v) => {
     try {
       const db = await idb();
       await new Promise((res, rej) => {
         const tx = db.transaction('kv', 'readwrite');
         tx.objectStore('kv').put(v, k);
-        tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+        tx.oncomplete = res; tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
       });
+      return true;
     } catch {
-      try { localStorage.setItem(DB_NAME + '.' + k, JSON.stringify(v)); } catch { /* storage full or blocked */ }
+      try { localStorage.setItem(DB_NAME + '.' + k, JSON.stringify(v)); return true; } catch { return false; }
     }
   };
 
@@ -65,7 +67,10 @@ const Store = (() => {
     dirty = false;
     const s = JSON.parse(JSON.stringify(shared));
     const l = JSON.parse(JSON.stringify(local));
-    chain = chain.then(() => kvSet(KEY_SHARED, s)).then(() => kvSet(KEY_LOCAL, l)).catch(() => {});
+    chain = chain.then(async () => {
+      const ok = (await kvSet(KEY_SHARED, s)) & (await kvSet(KEY_LOCAL, l));
+      if (!ok && api.onSaveError) api.onSaveError();
+    }).catch(() => { if (api.onSaveError) api.onSaveError(); });
     return chain;
   };
   const saveSoon = Util.debounce(flush, 250);
@@ -298,11 +303,13 @@ const Store = (() => {
     notify([{ kind: 'all' }], { remote: false });
   };
 
-  return {
+  const api = {
+    onSaveError: null, // set by App: shows "Couldn't save" with a Back up button
     SCHEMA, load, flush, migrate, merge, subscribe, onOutgoing,
     get shared() { return shared; }, get local() { return local; },
     settings, saveSettings, putItem, putCategory, updateOrder, newOrder, setLocal, stamp,
     orders, order, openOrderFor, items, categories, tables, table, allChanges, backup, restore, resetAll,
     _newer: newer, _mergeOrder: mergeOrder
   };
+  return api;
 })();

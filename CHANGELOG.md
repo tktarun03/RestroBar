@@ -2,6 +2,14 @@
 
 Newest first. Every release also gets an entry in `RELEASES` in `js/core/version.js` (shown in the app under Settings → Version history).
 
+## 0.1.4 (2026-11-07)
+
+- Notices follow the BasKar pattern: `UI.toast(title, { kind, body, undo | action, duration })` with title, body, one button, ✕, 4.5 s / 7 s with a button / 6 s for errors, pause on touch, slide animation, reduced-motion aware, `role="alert"` for errors.
+- Undo on: send to kitchen, remove dish, void, move table, kitchen ready/cooking, served, sold-out switch, delete dish/category, remove payment.
+- New notices: link lost (Relink), not linked when sending (Send by QR), storage save failure (Back up, via `Store.onSaveError`), updated version (What's new; replaces the What's new card).
+- Fixed: removing a not-sent dish deleted the line locally only, so a linked device could bring it back. It is now a hidden void line (`removed: true`) that syncs.
+- New skill `.claude/skills/toasts/SKILL.md`; AGENTS.md and the UI skill point to it. Tests in `tests/e2e/toast.spec.js`.
+
 ## 0.1.3 (2026-11-07)
 
 - Payment QR (`js/features/payqr.js`): `upi://pay` link with payee, amount and note for INR (GPay, PhonePe, Paytm), or an uploaded payment QR image for any currency. Shown under the "UPI / GPay" (or "Online / QR") payment method, full screen for the customer, and optionally printed on unpaid bills. Staff confirm receipt manually.

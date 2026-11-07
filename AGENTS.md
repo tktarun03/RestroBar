@@ -45,6 +45,7 @@ Typical setup: one kitchen tablet (role `hub`), several waiter phones (role `wai
 | Settings, Admin screen, self-check, feedback | `js/features/settings.js` |
 | Admin lock (Face ID / fingerprint + PIN) | `js/features/lock.js` |
 | Customer payment QR (UPI / own QR image) | `js/features/payqr.js` |
+| Notices (toasts), Undo | `UI.toast` in `js/ui/ui.js`; rules in `.claude/skills/toasts/SKILL.md` |
 | Colours, fonts, spacing | top of `css/app.css` |
 
 ## Golden rules
@@ -57,7 +58,8 @@ Typical setup: one kitchen tablet (role `hub`), several waiter phones (role `wai
 6. **One global scope.** Each file declares one top-level name (`const Feature = (() => {…})()`). A test checks names are unique.
 7. **Never send data off the device** except through a link or share the user starts. No analytics, no CDNs at runtime (libraries are vendored).
 8. **Mobile Safari first:** inputs ≥16px, tap targets ≥44px, no text <11px, safe areas via `env()`, no `100vh` for full-screen views. Zoom is disabled (owner's choice), so every screen must work at Settings → Text size A++ on a 320px phone; `tests/e2e/responsive.spec.js` checks it.
-9. **Wrap UI text in `t()`.** English is the key; keep user data out of the sentence, use `{placeholders}`.
+9. **Every data-changing action gets a notice** (`UI.toast(title, { body, undo | action })`), with Undo whenever it can be safely put back. Rules in `.claude/skills/toasts/SKILL.md`.
+10. **Wrap UI text in `t()`.** English is the key; keep user data out of the sentence, use `{placeholders}`.
 
 ## Test
 

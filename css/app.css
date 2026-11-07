@@ -28,6 +28,9 @@
   --st-void: #8E948E;
   --bad: #B8322A;
   --warn-bg: #FFF2DA;
+  --notif-bg: #141A16;
+  --notif-ink: #FFFFFF;
+  --notif-muted: #AAB3AC;
   --warn-ink: #6B4500;
   --shadow: 0 1px 2px rgb(20 30 20 / .06), 0 6px 18px rgb(20 30 20 / .07);
 
@@ -48,7 +51,7 @@
     --bg: #0F1210; --surface: #181C19; --surface-2: #222723; --ink: #ECEFE9; --muted: #9AA29A; --line: #2D332E;
     --paper: #1F211B; --paper-ink: #F1ECDD; --paper-line: #38392E;
     --st-new: #7C9CF2; --st-cook: #F0A63A; --st-ready: #4BC27E; --st-void: #737A73; --bad: #F06A5F;
-    --warn-bg: #3A2C10; --warn-ink: #F6D9A3; --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35);
+    --warn-bg: #3A2C10; --warn-ink: #F6D9A3; --notif-bg: #262C27; --notif-ink: #EEF1EC; --notif-muted: #A3ACA4; --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35);
     color-scheme: dark;
   }
 }
@@ -56,7 +59,7 @@
   --bg: #0F1210; --surface: #181C19; --surface-2: #222723; --ink: #ECEFE9; --muted: #9AA29A; --line: #2D332E;
   --paper: #1F211B; --paper-ink: #F1ECDD; --paper-line: #38392E;
   --st-new: #7C9CF2; --st-cook: #F0A63A; --st-ready: #4BC27E; --st-void: #737A73; --bad: #F06A5F;
-  --warn-bg: #3A2C10; --warn-ink: #F6D9A3; --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35);
+  --warn-bg: #3A2C10; --warn-ink: #F6D9A3; --notif-bg: #262C27; --notif-ink: #EEF1EC; --notif-muted: #A3ACA4; --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35);
   color-scheme: dark;
 }
 
@@ -190,16 +193,34 @@ button.banner { cursor: pointer; min-height: 48px; }
 
 /* ---------- toast + sheets ---------- */
 .toast {
-  /* Sits just above the bottom bars, so it never covers the search box or the Send / Pay buttons. */
-  position: fixed; inset-inline: var(--gutter-l) var(--gutter-r); bottom: calc(72px + var(--sab)); z-index: 60; margin-inline: auto; max-width: 460px;
-  padding: 10px 16px; border-radius: 12px; background: var(--ink); color: var(--bg); font-weight: 500; box-shadow: var(--shadow);
-  opacity: 0; transform: translateY(10px); transition: opacity .2s, transform .2s; pointer-events: none;
+  /* The bottom notice (BasKar pattern): title, optional body, one Undo/action button, ✕.
+     Sits just above the bottom bars, so it never covers the search box or the Send / Pay buttons. */
+  position: fixed; left: 50%; bottom: calc(72px + var(--sab)); z-index: 60; width: min(440px, calc(100% - 32px));
+  transform: translateX(-50%); display: flex; align-items: flex-start; gap: 10px; padding: 12px 6px 12px 16px;
+  border-radius: 16px; background: var(--notif-bg); color: var(--notif-ink); box-shadow: var(--shadow); font-size: .9375rem;
 }
 body:has(.action-bar) .toast { bottom: calc(144px + var(--sab)); }
 body.no-tabs .toast { bottom: calc(88px + var(--sab)); }
-.toast.show { opacity: 1; transform: none; }
-.toast.good { background: var(--st-ready); color: #fff; }
-.toast.bad { background: var(--bad); color: #fff; }
+.toast-ic { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; margin-top: 1px; }
+.toast-ic .ic { width: 15px; height: 15px; stroke-width: 2.6; }
+.toast.good .toast-ic { background: var(--st-ready); color: #fff; }
+.toast.bad .toast-ic { background: var(--bad); color: #fff; }
+.toast-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 2px; }
+.toast-body strong { font-weight: 500; }
+.toast-body span { color: var(--notif-muted); font-size: .875rem; font-weight: 400; }
+.toast-act {
+  flex: none; align-self: center; min-height: 40px; padding: 0 14px; border-radius: 999px; font: inherit; font-weight: 500;
+  border: 1px solid color-mix(in srgb, var(--notif-ink) 30%, transparent); background: transparent; color: var(--notif-ink); cursor: pointer;
+}
+.toast-x { position: relative; flex: none; width: 36px; height: 36px; margin-top: -4px; border: 0; border-radius: 50%; background: transparent; color: var(--notif-muted); display: grid; place-items: center; cursor: pointer; }
+.toast-x::after { content: ""; position: absolute; inset: -4px; } /* 44px tap area */
+.toast-x .ic { width: 18px; height: 18px; }
+.toast-act:active, .toast-x:active { background: color-mix(in srgb, var(--notif-ink) 14%, transparent); }
+.toast :focus-visible { outline-color: var(--notif-ink); }
+.toast.show { animation: toastUp .32s cubic-bezier(.2, .8, .2, 1); }
+.toast.out { animation: toastDown .22s ease-in forwards; }
+@keyframes toastUp { from { transform: translate(-50%, 24px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+@keyframes toastDown { to { transform: translate(-50%, 24px); opacity: 0; } }
 .sheet-wrap { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
 .sheet-backdrop { position: absolute; inset: 0; background: rgb(0 0 0 / .45); opacity: 0; transition: opacity .2s; }
 .sheet {

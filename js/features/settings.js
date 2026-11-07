@@ -324,5 +324,5 @@ const SettingsView = (() => {
 
   UI.route('more', view); // not '#settings': claude.ai reserves that hash when mirrored as an artifact
   UI.route('admin', adminView);
-  return { selfCheck };
+  return { selfCheck, versionsSheet };
 })();
