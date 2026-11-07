@@ -54,7 +54,7 @@ Typical setup: one kitchen tablet (role `hub`), several waiter phones (role `wai
 5. **No `alert/confirm/prompt`.** Use `UI.confirm`, `UI.ask`. A test enforces this.
 6. **One global scope.** Each file declares one top-level name (`const Feature = (() => {…})()`). A test checks names are unique.
 7. **Never send data off the device** except through a link or share the user starts. No analytics, no CDNs at runtime (libraries are vendored).
-8. **Mobile Safari first:** inputs ≥16px, tap targets ≥44px, no text <11px, safe areas via `env()`, no `100vh` for full-screen views.
+8. **Mobile Safari first:** inputs ≥16px, tap targets ≥44px, no text <11px, safe areas via `env()`, no `100vh` for full-screen views. Zoom is disabled (owner's choice), so every screen must work at Settings → Text size A++ on a 320px phone; `tests/e2e/responsive.spec.js` checks it.
 9. **Wrap UI text in `t()`.** English is the key; keep user data out of the sentence, use `{placeholders}`.
 
 ## Test

@@ -1,6 +1,6 @@
 // Offline support. VERSION must equal APP_VERSION (tests check it).
 // The page itself is network-first (so updates arrive), versioned assets are cache-first.
-const VERSION = '0.1.1';
+const VERSION = '0.1.2';
 const CACHE = 'restrobar-' + VERSION;
 const V = '?v=' + VERSION;
 const ASSETS = [
@@ -13,8 +13,8 @@ const ASSETS = [
   'js/features/tables.js' + V, 'js/features/order.js' + V, 'js/features/kitchen.js' + V, 'js/features/bill.js' + V,
   'js/features/menu.js' + V, 'js/features/reports.js' + V, 'js/features/settings.js' + V,
   'js/app.js' + V,
-  'fonts/barlow-latin-400-normal.woff2', 'fonts/barlow-latin-600-normal.woff2', 'fonts/barlow-latin-700-normal.woff2',
-  'fonts/ibm-plex-mono-latin-500-normal.woff2',
+  'fonts/barlow-latin-300-normal.woff2', 'fonts/barlow-latin-400-normal.woff2', 'fonts/barlow-latin-500-normal.woff2',
+  'fonts/ibm-plex-mono-latin-400-normal.woff2',
   'manifest.webmanifest' + V, 'icons/icon.svg' + V, 'icons/favicon.ico' + V, 'icons/apple-touch-icon.png' + V,
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png'
 ];

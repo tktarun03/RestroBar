@@ -33,3 +33,4 @@
 | 2026-11-07 | Not encrypting local data (deviates from the house template) | Shared tablet must open instantly; a lost password would lose the sales history; cloud auth is the long-term answer. PIN is labelled as an action lock only. |
 | 2026-11-07 | Vendor QR libraries and fonts instead of CDN | Must work offline and send nothing to third parties. Versions pinned in file names. |
 | 2026-11-07 | English only in v0.1 | Owner did not choose languages; translation table and logical CSS are in place. |
+| 2026-11-07 | Pinch and double-tap zoom disabled | Owner's request for shared work devices. Trade-off: worse for low vision; mitigated by the in-app Text size setting, tested at 320px. |

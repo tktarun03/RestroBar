@@ -53,7 +53,7 @@ const App = (() => {
       out.push(`<div class="notice"><div class="grow"><b>${t('What\'s new in {v}', { v: latest.version })}</b><ul>${latest.notes.slice(0, 3).map((n) => `<li>${Util.esc(n)}</li>`).join('')}</ul></div><button class="icon-btn" data-notice="seen" aria-label="${t('Dismiss')}">${UI.icon('x')}</button></div>`);
     }
     if (!isStandalone() && !sessionDismiss.home && L.setupDone) {
-      out.push(`<div class="notice"><div class="grow"><b>${t('Add RestroBar to your Home Screen')}</b><small>${t('It then opens full screen and works offline. Do this before taking real orders: the Home Screen app keeps its own data.')}</small></div><button class="btn link small" data-notice="how">${t('How')}</button><button class="icon-btn" data-notice="home" aria-label="${t('Dismiss')}">${UI.icon('x')}</button></div>`);
+      out.push(`<div class="notice"><div class="grow"><b>${t('Add RestroBar to your Home Screen')}</b><small>${t('Opens full screen and works offline. Set up from the Home Screen icon: it keeps its own data.')}</small></div><button class="btn link small" data-notice="how">${t('How')}</button><button class="icon-btn" data-notice="home" aria-label="${t('Dismiss')}">${UI.icon('x')}</button></div>`);
     }
     // Backup reminder: only once there is a day's worth of real sales to lose.
     const week = 6 * 864e5;
@@ -136,11 +136,25 @@ const App = (() => {
     navigator.serviceWorker.register('sw.js?v=' + APP_VERSION).catch(() => { /* blocked in some hosts */ });
   };
 
+  // Pinch and double-tap zoom are off (owner's choice for shared work devices).
+  // Settings → Text size is the way to make text bigger. iOS Safari ignores user-scalable=no,
+  // so its gesture events are blocked here too; ctrl+wheel covers laptop trackpads.
+  const noZoom = () => {
+    const stop = (e) => e.preventDefault();
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach((ev) => document.addEventListener(ev, stop, { passive: false }));
+    document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+    document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && ['+', '=', '-', '_', '0'].includes(e.key)) e.preventDefault();
+    });
+  };
+
   const hideSplash = () => { const sp = UI.$('#splash'); if (sp) { sp.classList.add('gone'); setTimeout(() => sp.remove(), 400); } };
 
   const boot = async () => {
     // The splash can never get stuck: it goes after 4 s whatever happens.
     const failsafe = setTimeout(hideSplash, 4000);
+    noZoom();
     try {
       await Store.load();
       applyLook();

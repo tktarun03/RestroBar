@@ -54,8 +54,11 @@ const UI = (() => {
     wrap.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) close(); });
     requestAnimationFrame(() => wrap.classList.add('in'));
     opts.onMount && opts.onMount(wrap, close);
-    const first = wrap.querySelector('input,select,textarea');
-    if (first && !opts.noFocus) setTimeout(() => first.focus(), 60);
+    // On touch screens, don't jump into a text box: the keyboard would cover the sheet
+    // (and older iOS zooms into it). Only short prompts that need typing (PIN, a name) ask for focus.
+    const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const first = wrap.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea');
+    if (first && !opts.noFocus && (!touch || opts.focus)) setTimeout(() => first.focus({ preventScroll: true }), 60);
     return { close, el: wrap };
   };
 
@@ -90,6 +93,7 @@ const UI = (() => {
           <button class="btn primary">${Util.esc(okLabel)}</button>
         </div>
       </form>`, {
+      focus: true, // PIN and short answers: open the keyboard straight away
       onClose: () => { if (!done) resolve(null); },
       onMount: (el, close) => {
         el.querySelector('[data-form]').onsubmit = (e) => {
