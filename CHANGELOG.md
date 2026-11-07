@@ -2,6 +2,15 @@
 
 Newest first. Every release also gets an entry in `RELEASES` in `js/core/version.js` (shown in the app under Settings → Version history).
 
+## 0.1.6 (2026-11-07)
+
+- End-of-day close in Sales: opening float (remembered), expected cash = float + cash sales, counted cash, over/short, note; saved as a synced `close` record per business day; "bills paid after the close" warning; Close again; share the day report as text.
+- Business day: `settings.dayEndsAt` (default 4 am) used by Sales, voids and the close (`Util.bizDay`).
+- Staff roles: `staffHideSales` (Sales tab hidden and `#reports` locked while Admin is locked) and `staffLockMenu` (adding/editing dishes needs the lock; sold-out switches stay open). Shared settings, so they apply on every linked device.
+- Admin PIN moved into shared settings as a salted SHA-256 hash (`settings.adminPin`), so all linked devices use one PIN. Old per-device PINs migrate on first start.
+- Notices move to the top while a sheet is open.
+- Tests: `tests/e2e/dayclose.spec.js`, business-day unit test, PIN sync in the link test.
+
 ## 0.1.5 (2026-11-07)
 
 - Refresh button (BasKar pattern) in the header of main screens and as Settings → Refresh app: saves, asks the service worker to update, fetches the page uncached, reloads; a "Refreshed" notice confirms after reload. If the host blocks reloading, a fallback notice after 7 s.

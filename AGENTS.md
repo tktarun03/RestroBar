@@ -41,7 +41,7 @@ Typical setup: one kitchen tablet (role `hub`), several waiter phones (role `wai
 | Kitchen display | `js/features/kitchen.js` |
 | Bill and payment, receipt | `js/features/bill.js` |
 | Menu editor | `js/features/menu.js` |
-| Sales report | `js/features/reports.js` |
+| Sales report, end-of-day close | `js/features/reports.js` |
 | Settings, Admin screen, self-check, feedback | `js/features/settings.js` |
 | Admin lock (Face ID / fingerprint + PIN) | `js/features/lock.js` |
 | Customer payment QR (UPI / own QR image) | `js/features/payqr.js` |
@@ -85,5 +85,6 @@ Follow `.claude/skills/release/SKILL.md`. Short version: add release notes (RELE
 - **iPhone Home Screen apps keep their own storage**, separate from Safari. Set up inside the Home Screen app, or move data with backup/import.
 - **Safari may delete site data after ~7 days unused.** The app reminds users to back up.
 - **Changing currency does not convert prices.**
+- **Settings merge as one record.** Two devices changing different settings at the same moment: the later one wins for all of them (including the admin PIN). Rare, but split settings into records if it bites.
 - **Data is not encrypted at rest** (decision in ROADMAP.md). The admin PIN is a lock on actions, not encryption.
 - **Printing** uses the browser print dialog. Direct Bluetooth thermal printers are not supported yet.

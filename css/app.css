@@ -201,6 +201,8 @@ button.banner { cursor: pointer; min-height: 48px; }
 }
 body:has(.action-bar) .toast { bottom: calc(144px + var(--sab)); }
 body.no-tabs .toast { bottom: calc(88px + var(--sab)); }
+/* With a sheet open, the notice moves to the top so it never covers the sheet's buttons. */
+body:has(.sheet-wrap) .toast { bottom: auto; top: calc(12px + var(--sat)); }
 .toast-ic { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; margin-top: 1px; }
 .toast-ic .ic { width: 15px; height: 15px; stroke-width: 2.6; }
 .toast.good .toast-ic { background: var(--st-ready); color: #fff; }
@@ -502,6 +504,19 @@ body.no-tabs .toast { bottom: calc(88px + var(--sab)); }
 .lock-mark { width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
 .lock-mark .ic { width: 30px; height: 30px; }
 .admin-row .ic { color: var(--accent); }
+
+/* ---------- day close ---------- */
+.close-card h2 { display: flex; align-items: center; gap: 8px; }
+.close-card small { display: block; text-align: start; margin-top: 2px; }
+.close-card.closed h2 .ic { color: var(--st-ready); }
+.diff-line { font-weight: 500; font-size: 1.05rem; text-align: center; margin: 0; }
+.diff-line.ok { color: var(--st-ready); }
+.diff-line.over { color: var(--st-cook); }
+.diff-line.short { color: var(--bad); }
+.chip.st-void-bad { background: color-mix(in srgb, var(--bad) 14%, transparent); color: var(--bad); }
+.toggle-row { cursor: pointer; }
+.toggle-row b { display: block; font-weight: 500; }
+.toggle-row small { display: block; color: var(--muted); }
 
 /* ---------- splash ---------- */
 #splash { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: grid; place-items: center; transition: opacity .3s; }

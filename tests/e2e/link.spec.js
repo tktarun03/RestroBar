@@ -81,6 +81,11 @@ test('kitchen tablet and waiter phone link and stay in sync', async ({ browser }
   await phone.goto('/#tables');
   await expect(phone.locator('.ready-strip')).toContainText('Table 2', { timeout: 10000 });
 
+  // The admin PIN set on the tablet also locks the phone
+  await hub.evaluate(() => Lock.setPin('9753'));
+  await expect.poll(() => phone.evaluate(() => Lock.hasPin()), { timeout: 10000 }).toBe(true);
+  expect(await phone.evaluate(() => Lock.checkPin('9753'))).toBe(true);
+
   expect(hubErrs.concat(phoneErrs).filter((e) => !/getUserMedia|NotAllowed/.test(e))).toEqual([]);
   await hubCtx.close(); await phoneCtx.close();
 });

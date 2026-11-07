@@ -20,10 +20,12 @@ Stored in IndexedDB (`restrobar` → `kv` store), two keys. Falls back to localS
     currency /* ISO 4217 */, locale /* '' = device */, taxes: [{ name, rate /* % */ }],
     taxInclusive, serviceCharge /* % */, tables: [{ id, name }],
     upiId, upiName, payQr /* data: URL */, payQrOnBill,
+    adminPin /* { salt, hash } or '' */, staffHideSales, staffLockMenu, dayEndsAt /* 0–6 */, cashFloat,
     updatedAt, updatedBy
   },
   categories: { [id]: { id, name, sort, deleted?, updatedAt, updatedBy } },
   items:      { [id]: { id, catId, name, price /* minor units */, available, station, sort, deleted?, updatedAt, updatedBy } },
+  closes:     { [businessDay]: { id, day, closedAt, closedBy, float, expected, counted, diff, bills, sales, tax, discount, service, methods, voids, openTables, note, updatedAt, updatedBy } },
   orders:     { [id]: {
     id, tableId, status /* open | paid | void */, createdAt, createdBy,
     kotSeq, billRequested, guests, discount: { type: 'pct' | 'amt', value },

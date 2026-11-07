@@ -1,6 +1,11 @@
 // Menu editor: categories and dishes, prices, and "sold out" switches.
 // Deletes are soft (deleted: true) so they sync to linked devices.
 const MenuView = (() => {
+  // With "Only admin edits the menu" on, adding or changing dishes needs the admin lock.
+  const guard = (fn) => async (...a) => {
+    if (Lock.restricted('menu') && !(await Lock.verify(t('Admin PIN to edit the menu')))) return;
+    fn(...a);
+  };
   const itemSheet = (item) => {
     const s = Store.settings();
     const cats = Store.categories();
@@ -114,11 +119,11 @@ const MenuView = (() => {
       </div>`;
 
     const on = (a, fn) => el.querySelectorAll(`[data-act=${a}]`).forEach((b) => { b.onclick = fn; });
-    on('add-item', () => itemSheet({ catId: (cats[0] || {}).id, available: true }));
-    on('add-cat', () => catSheet({}));
-    on('demo', () => { Demo.loadMenu(); UI.toast(t('Sample menu added'), { kind: 'good', body: t('Edit prices or switch dishes off any time.') }); });
-    el.querySelectorAll('[data-cat]').forEach((b) => { b.onclick = () => catSheet(Store.shared.categories[b.dataset.cat]); });
-    el.querySelectorAll('[data-item]').forEach((b) => { b.onclick = () => itemSheet(Store.shared.items[b.dataset.item]); });
+    on('add-item', guard(() => itemSheet({ catId: (cats[0] || {}).id, available: true })));
+    on('add-cat', guard(() => catSheet({})));
+    on('demo', guard(() => { Demo.loadMenu(); UI.toast(t('Sample menu added'), { kind: 'good', body: t('Edit prices or switch dishes off any time.') }); }));
+    el.querySelectorAll('[data-cat]').forEach((b) => { b.onclick = guard(() => catSheet(Store.shared.categories[b.dataset.cat])); });
+    el.querySelectorAll('[data-item]').forEach((b) => { b.onclick = guard(() => itemSheet(Store.shared.items[b.dataset.item])); });
     el.querySelectorAll('[data-avail]').forEach((b) => {
       b.onchange = () => {
         const it = Store.shared.items[b.dataset.avail];

@@ -13,12 +13,30 @@ const Lock = (() => {
   const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
   const random = (n) => crypto.getRandomValues(new Uint8Array(n));
 
-  const hasPin = () => !!Store.local.pin;
+  // The admin PIN is shared by all linked devices (stored as a salted SHA-256 hash in settings),
+  // so a waiter phone asks for the same PIN as the kitchen tablet. Face ID stays per device.
+  const pinRec = () => Store.settings().adminPin;
+  const hasPin = () => !!(pinRec() && pinRec().hash);
+  const hashPin = async (salt, pin) => b64u(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin)));
+  const checkPin = async (pin) => { const r = pinRec(); return !!r && !!pin && (await hashPin(r.salt, pin)) === r.hash; };
+  const setPin = async (pin) => {
+    if (!pin) { Store.saveSettings({ adminPin: '' }); return; }
+    const salt = b64u(random(16));
+    Store.saveSettings({ adminPin: { salt, hash: await hashPin(salt, pin) } });
+  };
+  // 0.1.5 and older kept the PIN on each device; move it into the shared settings once.
+  const migrateLocalPin = async () => {
+    const old = Store.local.pin;
+    if (!old) return;
+    if (!hasPin()) await setPin(old);
+    Store.setLocal({ pin: '' });
+  };
   const hasBio = () => !!Store.local.passkeyId;
   const isSet = () => hasPin() || hasBio();
   const isOpen = () => !isSet() || Util.now() < until;
-  const unlock = () => { until = Util.now() + WINDOW; };
-  const lock = () => { until = 0; };
+  const changed = () => { if (typeof App !== 'undefined' && App.tabsChanged) App.tabsChanged(); };
+  const unlock = () => { until = Util.now() + WINDOW; changed(); };
+  const lock = () => { until = 0; changed(); };
   const minutesLeft = () => Math.max(0, Math.ceil((until - Util.now()) / 60000));
 
   const apple = () => /iPhone|iPad|Macintosh/.test(navigator.userAgent);
@@ -74,9 +92,36 @@ const Lock = (() => {
   const askPin = async (why) => {
     const v = await UI.ask(why || t('Admin PIN'), { type: 'password', inputmode: 'numeric', okLabel: t('Unlock') });
     if (v === null) return false;
-    if (v === Store.local.pin) return true;
+    if (await checkPin(v)) return true;
     UI.toast(t('Wrong PIN'), 'bad');
     return false;
+  };
+
+  // Staff restrictions (Admin → Security). Only bite when a PIN exists and Admin is locked.
+  const restricted = (what) => {
+    if (!hasPin() || isOpen()) return false;
+    const s = Store.settings();
+    return what === 'sales' ? !!s.staffHideSales : what === 'menu' ? !!s.staffLockMenu : true;
+  };
+
+  // A full-screen "locked" page with Face ID / PIN buttons; calls after() once unlocked.
+  const lockedView = (el, title, back, after) => {
+    el.innerHTML = `
+      ${UI.header(title, { back })}
+      <div class="page">
+        <section class="card locked center">
+          <div class="lock-mark">${UI.icon('lock')}</div>
+          <h2>${t('{title} is locked', { title })}</h2>
+          <p class="muted">${hasBio() ? t('Use {name}, or the admin PIN.', { name: bioName() }) : t('Enter the admin PIN.')}</p>
+          <button class="btn primary block" data-act="unlock">${hasBio() ? t('Unlock with {name}', { name: bioName() }) : t('Unlock')}</button>
+          ${hasBio() ? `<button class="btn ghost block" data-act="unlock-pin">${t('Use PIN instead')}</button>` : ''}
+        </section>
+      </div>`;
+    const go = (pinOnly) => verify(t('Admin PIN'), { pinOnly }).then((ok) => {
+      if (ok) after(); else if (!pinOnly && hasBio()) UI.toast(t('Not recognised. Try again or use the PIN.'), 'bad');
+    });
+    el.querySelector('[data-act=unlock]').onclick = () => go(false);
+    const p = el.querySelector('[data-act=unlock-pin]'); if (p) p.onclick = () => go(true);
   };
 
   /** Resolves true if the person may continue. No lock set → always true. */
@@ -87,5 +132,5 @@ const Lock = (() => {
     return false;
   };
 
-  return { isSet, isOpen, hasPin, hasBio, verify, unlock, lock, minutesLeft, bioName, bioAvailable, enrollBio, disableBio };
+  return { restricted, lockedView, isSet, isOpen, hasPin, hasBio, setPin, checkPin, migrateLocalPin, verify, unlock, lock, minutesLeft, bioName, bioAvailable, enrollBio, disableBio };
 })();

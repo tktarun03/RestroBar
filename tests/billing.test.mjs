@@ -66,3 +66,10 @@ test('currency minor units: QAR 2, JPY 0, KWD 3', () => {
 test('escaping user text before it goes into HTML', () => {
   assert.equal(Util.esc('<img src=x onerror="1">&\''), '&lt;img src=x onerror=&quot;1&quot;&gt;&amp;&#39;');
 });
+
+test('business day: a 1 am bill counts for the night before when the day ends at 4', () => {
+  const at = (s) => new Date(s).getTime();
+  assert.equal(Util.bizDay(at('2026-11-08T01:30:00'), 4), '2026-11-07');
+  assert.equal(Util.bizDay(at('2026-11-08T04:30:00'), 4), '2026-11-08');
+  assert.equal(Util.bizDay(at('2026-11-08T01:30:00'), 0), '2026-11-08');
+});

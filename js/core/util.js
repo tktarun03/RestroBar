@@ -41,6 +41,8 @@ const Util = (() => {
     const d = new Date(ts);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   };
+  // Business day: a restaurant's night runs past midnight, so shift by the closing hour.
+  const bizDay = (ts, endsAt = 0) => dayKey(ts - (Number(endsAt) || 0) * 3600000);
   const minutesSince = (ts) => Math.max(0, Math.floor((Date.now() - ts) / 60000));
 
   // Text colour that reads on a given hex background.
@@ -64,5 +66,5 @@ const Util = (() => {
     let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
   };
 
-  return { esc, uid, now, minorDigits, toMinor, fromMinor, money, amountStr, time, dateTime, dayKey, minutesSince, onColor, csvCell, debounce };
+  return { esc, uid, now, minorDigits, toMinor, fromMinor, money, amountStr, time, dateTime, dayKey, bizDay, minutesSince, onColor, csvCell, debounce };
 })();

@@ -24,6 +24,9 @@ const SettingsView = (() => {
         <label class="field"><span>${t('Phone')}</span><input id="b-phone" class="input" value="${Util.esc(s.phone)}" inputmode="tel" autocomplete="tel"></label>
         <label class="field"><span>${t('Tax registration no.')}</span><input id="b-taxno" class="input" value="${Util.esc(s.taxNo)}"></label>
         <label class="field"><span>${t('Receipt footer')}</span><input id="b-foot" class="input" value="${Util.esc(s.footer)}"></label>
+        <label class="field"><span>${t('Business day ends at')}</span>
+          <select id="b-dayend" class="input">${[0, 1, 2, 3, 4, 5, 6].map((h) => `<option value="${h}" ${+s.dayEndsAt === h ? 'selected' : ''}>${h === 0 ? t('Midnight') : String(h).padStart(2, '0') + ':00'}</option>`).join('')}</select></label>
+        <p class="hint">${t('Bills before this hour count for the night before, in Sales and the day close.')}</p>
         <div class="row end gap"><button type="button" class="btn ghost" data-close>${t('Cancel')}</button><button class="btn primary">${t('Save')}</button></div>
       </form>`, {
       onMount: (el, close) => {
@@ -36,7 +39,7 @@ const SettingsView = (() => {
         el.querySelector('[data-form]').onsubmit = (e) => {
           e.preventDefault();
           const v = (id) => el.querySelector('#' + id).value.trim();
-          Store.saveSettings({ brandName: v('b-name') || 'My Restaurant', logo, accent: v('b-accent'), address: v('b-addr'), phone: v('b-phone'), taxNo: v('b-taxno'), footer: v('b-foot') });
+          Store.saveSettings({ brandName: v('b-name') || 'My Restaurant', logo, accent: v('b-accent'), address: v('b-addr'), phone: v('b-phone'), taxNo: v('b-taxno'), footer: v('b-foot'), dayEndsAt: +v('b-dayend') });
           App.applyLook(); close(); UI.toast(t('Saved'));
         };
       }
@@ -152,7 +155,7 @@ const SettingsView = (() => {
   };
 
   const pinSheet = async () => {
-    if (Store.local.pin && !(await UI.requirePin(t('Current PIN')))) return;
+    if (Lock.hasPin() && !(await UI.requirePin(t('Current PIN')))) return;
     const v = await UI.ask(t('New admin PIN (leave empty to turn off)'), { type: 'password', inputmode: 'numeric', placeholder: '4–8 digits' });
     if (v === null) return;
     if (v && !/^\d{4,8}$/.test(v)) { UI.toast(t('Use 4 to 8 digits'), 'bad'); return; }
@@ -162,8 +165,8 @@ const SettingsView = (() => {
       Lock.disableBio();
     }
     if (v) Lock.unlock(); // before saving, so the admin screen re-renders unlocked
-    Store.setLocal({ pin: v });
-    UI.toast(v ? t('PIN set') : t('Admin lock turned off'));
+    await Lock.setPin(v);
+    UI.toast(v ? t('PIN set') : t('Admin lock turned off'), { kind: v ? 'good' : '', body: v ? t('Linked devices use the same PIN.') : undefined });
   };
 
   const bioToggle = async () => {
@@ -264,23 +267,7 @@ const SettingsView = (() => {
   const adminView = (el) => {
     document.body.classList.remove('no-tabs');
     const s = Store.settings(); const L = Store.local;
-    if (!Lock.isOpen()) {
-      el.innerHTML = `
-        ${UI.header(t('Admin'), { back: 'more' })}
-        <div class="page">
-          <section class="card locked center">
-            <div class="lock-mark">${UI.icon('lock')}</div>
-            <h2>${t('Admin is locked')}</h2>
-            <p class="muted">${Lock.hasBio() ? t('Use {name}, or your admin PIN.', { name: Lock.bioName() }) : t('Enter your admin PIN.')}</p>
-            <button class="btn primary block" data-act="unlock">${Lock.hasBio() ? t('Unlock with {name}', { name: Lock.bioName() }) : t('Unlock')}</button>
-            ${Lock.hasBio() ? `<button class="btn ghost block" data-act="unlock-pin">${t('Use PIN instead')}</button>` : ''}
-          </section>
-        </div>`;
-      const go = (pinOnly) => Lock.verify(t('Admin PIN'), { pinOnly }).then((ok) => { if (ok) adminView(el); else if (!pinOnly && Lock.hasBio()) UI.toast(t('Not recognised. Try again or use your PIN.'), 'bad'); });
-      el.querySelector('[data-act=unlock]').onclick = () => go(false);
-      const p = el.querySelector('[data-act=unlock-pin]'); if (p) p.onclick = () => go(true);
-      return;
-    }
+    if (!Lock.isOpen()) { Lock.lockedView(el, t('Admin'), 'more', () => adminView(el)); return; }
     const lastBk = L.lastBackupAt ? Util.dateTime(L.lastBackupAt, s.locale) : t('never');
     const payKind = PayQR.kind(s);
     el.innerHTML = `
@@ -297,8 +284,10 @@ const SettingsView = (() => {
           <a class="set-row" href="#reports"><span class="grow"><b>${t('Sales')}</b><small>${t('Daily sales, best sellers, voids')}</small></span>${UI.icon('chevron')}</a>
         </section>
         <section class="set-group"><h2>${t('Security')}</h2>
-          ${row('pin', t('Admin PIN'), L.pin ? t('On · needed for admin, voids, discounts, price changes') : t('Off'), 'lock')}
-          ${row('bio', Lock.bioName().replace(/^./, (c) => c.toUpperCase()), Lock.hasBio() ? t('On for this device') : L.pin ? t('Off · tap to turn on') : t('Set an admin PIN first'), 'lock')}
+          ${row('pin', t('Admin PIN'), Lock.hasPin() ? t('On · needed for admin, voids, discounts, price changes') : t('Off'), 'lock')}
+          ${row('bio', Lock.bioName().replace(/^./, (c) => c.toUpperCase()), Lock.hasBio() ? t('On for this device') : Lock.hasPin() ? t('Off · tap to turn on') : t('Set an admin PIN first'), 'lock')}
+          <label class="set-inline toggle-row"><span><b>${t('Hide Sales from staff')}</b><small>${t('Sales open only after unlocking')}</small></span><span class="switch"><input type="checkbox" id="st-sales" ${s.staffHideSales ? 'checked' : ''}><span></span></span></label>
+          <label class="set-inline toggle-row"><span><b>${t('Only admin edits the menu')}</b><small>${t('Staff can still switch dishes to sold out')}</small></span><span class="switch"><input type="checkbox" id="st-menu" ${s.staffLockMenu ? 'checked' : ''}><span></span></span></label>
           <p class="hint pad">${t('This is a lock on the screen, not encryption. Each device has its own face or fingerprint setting; the PIN works everywhere.')}</p>
         </section>
         <section class="set-group"><h2>${t('Data')}</h2>
@@ -315,6 +304,12 @@ const SettingsView = (() => {
     on('tables', tablesSheet);
     on('pin', pinSheet);
     on('bio', bioToggle);
+    const sw = (id, key, onMsg, offMsg) => { const x = el.querySelector('#' + id); if (x) x.onchange = () => {
+      Store.saveSettings({ [key]: x.checked });
+      UI.toast(x.checked ? onMsg : offMsg, { body: Lock.hasPin() ? undefined : t('Set an admin PIN for this to take effect.'), undo: () => Store.saveSettings({ [key]: !x.checked }) });
+    }; };
+    sw('st-sales', 'staffHideSales', t('Sales hidden from staff'), t('Sales visible to everyone'));
+    sw('st-menu', 'staffLockMenu', t('Only admin edits the menu'), t('Everyone can edit the menu'));
     on('backup', Share.backupNow);
     on('restore', Share.importFile);
     on('reset', async () => {

@@ -33,7 +33,9 @@ const App = (() => {
       ['more', t('Settings'), 'settings', 'links admin']
     ];
     // Kitchen tablet starts on Kitchen; waiter phones rarely need the kitchen tab but keep it reachable.
-    const ordered = role === 'hub' ? [list[1], list[0], list[2], list[3], list[4]] : list;
+    let ordered = role === 'hub' ? [list[1], list[0], list[2], list[3], list[4]] : list;
+    // Staff see no Sales tab while Admin is locked (Admin → Security → Hide Sales from staff).
+    if (Lock.restricted('sales')) ordered = ordered.filter((x) => x[0] !== 'reports');
     UI.$('#tabs').innerHTML = ordered.map(([r, label, ic, alt]) => `
       <a class="tab" href="#${r}" data-go="${r}" data-alt="${alt}">${UI.icon(ic)}<span>${label}</span>${r === 'kitchen' ? '<span class="badge" id="k-badge" hidden></span>' : ''}${r === 'tables' ? '<span class="badge" id="r-badge" hidden></span>' : ''}</a>`).join('');
     badges();
@@ -178,6 +180,7 @@ const App = (() => {
     try {
       await Store.load();
       applyLook();
+      await Lock.migrateLocalPin();
       seedStatus();
       tabs();
       Store.subscribe((changes, meta) => {
@@ -219,7 +222,19 @@ const App = (() => {
     }
   };
 
-  return { boot, refresh, applyLook, homeRoute, notices, wireNotices, homeScreenTip, badges, isStandalone };
+  // Called when Admin locks or unlocks: rebuild the tabs and re-check the open screen.
+  let wasOpen = null;
+  const tabsChanged = () => {
+    tabs();
+    if (['reports', 'admin', 'menu'].includes(UI.current().name)) UI.softRender();
+  };
+  setInterval(() => {
+    const open = typeof Lock !== 'undefined' && Lock.isOpen();
+    if (wasOpen !== null && open !== wasOpen) tabsChanged(); // Admin re-locked after 5 minutes
+    wasOpen = open;
+  }, 5000);
+
+  return { boot, refresh, tabsChanged, applyLook, homeRoute, notices, wireNotices, homeScreenTip, badges, isStandalone };
 })();
 
 App.boot();

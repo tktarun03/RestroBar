@@ -99,6 +99,11 @@ const Store = (() => {
     upiName: '',         // payee name shown in the UPI app ('' = brand name)
     payQr: '',           // owner's own payment QR image (data: URL), any currency
     payQrOnBill: true,   // print the payment QR on unpaid bills
+    adminPin: '',        // { salt, hash } — shared so every device asks for the same PIN ('' = no PIN)
+    staffHideSales: true,  // with a PIN set: Sales only after unlocking
+    staffLockMenu: true,   // with a PIN set: adding/editing dishes needs the lock (sold-out switches stay open)
+    dayEndsAt: 4,        // business day ends at this hour (0–6), so a 1 am bill counts for the night before
+    cashFloat: 0,        // usual cash in the drawer at opening (minor units), suggested at day close
     updatedAt: 0,
     updatedBy: ''
   });
@@ -110,6 +115,7 @@ const Store = (() => {
     sh.categories = sh.categories || {};
     sh.items = sh.items || {};
     sh.orders = sh.orders || {};
+    sh.closes = sh.closes || {}; // day closes, keyed by business day 'YYYY-MM-DD'
     for (const it of Object.values(sh.items)) {
       if (it.available === undefined) it.available = true;
       if (it.station === undefined) it.station = '';
@@ -202,8 +208,8 @@ const Store = (() => {
           shared.orders[rec.id] = migrate({ orders: { [rec.id]: rec } }).sh.orders[rec.id];
           applied.push({ kind: 'order', rec: shared.orders[rec.id] });
         }
-      } else if (c.kind === 'item' || c.kind === 'category') {
-        const bag = c.kind === 'item' ? shared.items : shared.categories;
+      } else if (c.kind === 'item' || c.kind === 'category' || c.kind === 'close') {
+        const bag = c.kind === 'item' ? shared.items : c.kind === 'category' ? shared.categories : shared.closes;
         if (newer(c.rec, bag[c.rec.id])) { bag[c.rec.id] = Object.assign({}, c.rec); applied.push(c); }
       }
     }
@@ -230,6 +236,8 @@ const Store = (() => {
   };
 
   const putItem = (rec) => { stamp(rec); shared.items[rec.id] = rec; commit([{ kind: 'item', rec }]); return rec; };
+  const putClose = (rec) => { stamp(rec); shared.closes[rec.id] = rec; commit([{ kind: 'close', rec }]); return rec; };
+  const closes = () => shared.closes;
   const putCategory = (rec) => { stamp(rec); shared.categories[rec.id] = rec; commit([{ kind: 'category', rec }]); return rec; };
 
   /** Change an order through a draft; only lines you actually changed get a new stamp. */
@@ -277,7 +285,8 @@ const Store = (() => {
     { kind: 'settings', rec: shared.settings },
     ...Object.values(shared.categories).map((rec) => ({ kind: 'category', rec })),
     ...Object.values(shared.items).map((rec) => ({ kind: 'item', rec })),
-    ...Object.values(shared.orders).map((rec) => ({ kind: 'order', rec }))
+    ...Object.values(shared.orders).map((rec) => ({ kind: 'order', rec })),
+    ...Object.values(shared.closes).map((rec) => ({ kind: 'close', rec }))
   ];
 
   const backup = () => ({
@@ -307,7 +316,7 @@ const Store = (() => {
     onSaveError: null, // set by App: shows "Couldn't save" with a Back up button
     SCHEMA, load, flush, migrate, merge, subscribe, onOutgoing,
     get shared() { return shared; }, get local() { return local; },
-    settings, saveSettings, putItem, putCategory, updateOrder, newOrder, setLocal, stamp,
+    settings, saveSettings, putItem, putCategory, putClose, closes, updateOrder, newOrder, setLocal, stamp,
     orders, order, openOrderFor, items, categories, tables, table, allChanges, backup, restore, resetAll,
     _newer: newer, _mergeOrder: mergeOrder
   };

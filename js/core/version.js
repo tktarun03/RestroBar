@@ -1,10 +1,20 @@
 // Single source of truth for the release number.
 // Must match ?v= on every CSS/JS link in index.html, VERSION in sw.js,
 // and the top entry of CHANGELOG.md (tests/structure.test.mjs checks all four).
-const APP_VERSION = '0.1.5';
+const APP_VERSION = '0.1.6';
 
 // Newest first. Shown in Settings → Version history and the "What's new" notice.
 const RELEASES = [
+  {
+    version: '0.1.6',
+    date: '2026-11-07',
+    notes: [
+      'End of day: in Sales, tap Close the day, count the cash drawer, and see if it is over or short. Share the day report.',
+      'Staff roles: with an admin PIN, Sales are hidden and only admin edits the menu. Staff can still mark dishes sold out.',
+      'The admin PIN is now the same on every linked device.',
+      'Late nights count for the right day: bills before 4 am go to the night before (change it in Admin → Restaurant details).'
+    ]
+  },
   {
     version: '0.1.5',
     date: '2026-11-07',

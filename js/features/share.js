@@ -126,7 +126,8 @@ const Share = (() => {
       const changes = [{ kind: 'settings', rec: sh.settings },
         ...Object.values(sh.categories || {}).map((rec) => ({ kind: 'category', rec })),
         ...Object.values(sh.items || {}).map((rec) => ({ kind: 'item', rec })),
-        ...Object.values(sh.orders || {}).map((rec) => ({ kind: 'order', rec }))];
+        ...Object.values(sh.orders || {}).map((rec) => ({ kind: 'order', rec })),
+        ...Object.values(sh.closes || {}).map((rec) => ({ kind: 'close', rec }))];
       const n = Store.merge(changes, { source: 'file' }).length;
       UI.toast(t('Merged {n} records', { n }), 'good');
       return true;
