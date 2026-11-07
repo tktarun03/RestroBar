@@ -23,7 +23,7 @@ const errorsOf = (page) => {
   return errs;
 };
 
-async function setUp(page, { role = 'solo' } = {}) {
+async function setUp(page, { role = 'solo', currency = 'QAR', upi = '' } = {}) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Skip' }).click();
   await expect(page.getByText('How will this device be used?')).toBeVisible();
@@ -35,7 +35,7 @@ async function setUp(page, { role = 'solo' } = {}) {
   await page.getByLabel('Restaurant name').fill('Saffron House');
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  await page.locator('#f-currency').selectOption('QAR');
+  await page.locator('#f-currency').selectOption(currency);
   await page.getByRole('button', { name: 'Add a tax' }).click();
   await page.locator('[data-tax-name="0"]').fill('VAT');
   await page.locator('[data-tax-rate="0"]').fill('5');
@@ -43,10 +43,19 @@ async function setUp(page, { role = 'solo' } = {}) {
   await noSideScroll(page);
   await page.getByRole('button', { name: 'Continue' }).click();
 
+  // Customer payments (optional)
+  await expect(page.getByText('Customer payments')).toBeVisible();
+  if (upi) await page.getByLabel('UPI ID for GPay, PhonePe, Paytm').fill(upi);
+  await noSideScroll(page);
+  await page.getByRole('button', { name: 'Continue' }).click();
+
   await page.getByRole('button', { name: 'Fewer' }).click(); // 8 → 7
   await expect(page.locator('#f-tcount')).toHaveText('7');
   await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.locator('[data-tax-name="0"]')).toHaveValue('VAT'); // values kept going back
+  await page.getByRole('button', { name: 'Continue' }).click();
+  if (upi) await expect(page.getByLabel('UPI ID for GPay, PhonePe, Paytm')).toHaveValue(upi);
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.locator('#f-tcount')).toHaveText('7');
   await page.getByRole('button', { name: 'Continue' }).click();

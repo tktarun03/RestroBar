@@ -44,7 +44,7 @@ const SettingsView = (() => {
   };
 
   const moneySheet = async () => {
-    if (!(await UI.requirePin(t('Manager PIN to change prices and tax')))) return;
+    if (!(await UI.requirePin(t('Admin PIN to change prices and tax')))) return;
     const s = Store.settings();
     let taxes = JSON.parse(JSON.stringify(s.taxes));
     let list = []; try { list = Intl.supportedValuesOf('currency'); } catch { list = [s.currency]; }
@@ -153,11 +153,25 @@ const SettingsView = (() => {
 
   const pinSheet = async () => {
     if (Store.local.pin && !(await UI.requirePin(t('Current PIN')))) return;
-    const v = await UI.ask(t('New manager PIN (leave empty to turn off)'), { type: 'password', inputmode: 'numeric', placeholder: '4–8 digits' });
+    const v = await UI.ask(t('New admin PIN (leave empty to turn off)'), { type: 'password', inputmode: 'numeric', placeholder: '4–8 digits' });
     if (v === null) return;
     if (v && !/^\d{4,8}$/.test(v)) { UI.toast(t('Use 4 to 8 digits'), 'bad'); return; }
+    if (!v && Lock.hasBio()) {
+      // The PIN is the way back in if face or fingerprint fails, so both go together.
+      if (!(await UI.confirm(t('Turn off the admin lock?'), t('{name} is turned off too, because the PIN is its backup.', { name: Lock.bioName() }), t('Turn off'), true))) return;
+      Lock.disableBio();
+    }
+    if (v) Lock.unlock(); // before saving, so the admin screen re-renders unlocked
     Store.setLocal({ pin: v });
-    UI.toast(v ? t('PIN set') : t('PIN turned off'));
+    UI.toast(v ? t('PIN set') : t('Admin lock turned off'));
+  };
+
+  const bioToggle = async () => {
+    if (Lock.hasBio()) {
+      if (await UI.confirm(t('Turn off {name}?', { name: Lock.bioName() }), t('The admin PIN still works.'), t('Turn off'))) { Lock.disableBio(); UI.toast(t('Turned off')); }
+      return;
+    }
+    await Lock.enrollBio();
   };
 
   const versionsSheet = () => UI.open(`
@@ -195,6 +209,9 @@ const SettingsView = (() => {
     return `${REPO}/issues/new?${p}`;
   };
 
+  const lockStatus = () => Lock.hasBio() ? t('Locked with {name} and PIN', { name: Lock.bioName() }) : Lock.hasPin() ? t('Locked with PIN') : t('Not locked: anyone can change prices');
+
+  // Everyday settings: anyone on the device can use these.
   const view = (el) => {
     document.body.classList.remove('no-tabs');
     const s = Store.settings(); const L = Store.local;
@@ -202,22 +219,15 @@ const SettingsView = (() => {
     el.innerHTML = `
       ${UI.header(t('Settings'))}
       <div class="page settings">
-        <section class="set-group"><h2>${t('Restaurant')}</h2>
-          ${row('brand', t('Restaurant details'), Util.esc(s.brandName) + (s.address ? ' · ' + Util.esc(s.address) : ''))}
-          ${row('money', t('Prices and tax'), `${Util.esc(s.currency)} · ${s.taxes.length ? s.taxes.map((x) => Util.esc(x.name) + ' ' + x.rate + '%').join(', ') : t('no tax')}${s.serviceCharge ? ' · ' + t('service') + ' ' + s.serviceCharge + '%' : ''}`)}
-          ${row('tables', t('Tables'), t('{n} tables', { n: s.tables.length }))}
-          <a class="set-row" href="#menu"><span class="grow"><b>${t('Menu')}</b><small>${t('{n} dishes', { n: Store.items().length })}</small></span>${UI.icon('chevron')}</a>
+        <section class="set-group">
+          <a class="set-row admin-row" href="#admin"><span class="grow"><b>${t('Admin')}</b><small>${t('Restaurant, prices, payments, tables, security')} · ${lockStatus()}</small></span>${UI.icon('lock')}</a>
         </section>
         <section class="set-group"><h2>${t('Devices')}</h2>
           ${row('device', t('This device'), Util.esc(L.deviceName) + ' · ' + t({ solo: 'One device does everything', hub: 'Main kitchen tablet', waiter: 'Waiter phone' }[L.role]))}
           <a class="set-row" href="#links"><span class="grow"><b>${t('Linked devices')}</b><small>${t('Live link over the same Wi-Fi')}</small></span>${UI.icon('chevron')}</a>
           ${row('scan', t('Receive by QR code'), t('Scan an order or bill from another device'), 'qr')}
           ${row('import', t('Import a file'), t('Order, bill or backup received by Bluetooth, AirDrop or chat'), 'upload')}
-        </section>
-        <section class="set-group"><h2>${t('Data')}</h2>
           ${row('backup', t('Back up now'), t('Last backup: {when}', { when: lastBk }), 'download')}
-          ${row('pin', t('Manager PIN'), L.pin ? t('On · needed for voids, discounts, price changes') : t('Off'), 'lock')}
-          ${row('reset', t('Erase all data on this device'), '', 'trash')}
         </section>
         <section class="set-group"><h2>${t('Appearance')}</h2>
           <div class="set-inline"><span>${t('Theme')}</span>
@@ -236,27 +246,83 @@ const SettingsView = (() => {
         </section>
       </div>`;
     const on = (a, fn) => { const b = el.querySelector(`[data-act=${a}]`); if (b) b.onclick = fn; };
-    on('brand', brandSheet);
-    on('money', moneySheet);
-    on('tables', async () => { if (await UI.requirePin(t('Manager PIN to change tables'))) tablesSheet(); });
     on('device', deviceSheet);
     on('scan', Share.scanImport);
     on('import', Share.importFile);
     on('backup', Share.backupNow);
-    on('pin', pinSheet);
     on('versions', versionsSheet);
     on('check', selfCheck);
     on('homescreen', App.homeScreenTip);
     on('tour', () => { Store.setLocal({ tourDone: false }); UI.go('tour'); });
-    on('reset', async () => {
-      if (!(await UI.requirePin(t('Manager PIN to erase')))) return;
-      if (!(await UI.confirm(t('Erase everything on this device?'), t('Menu, orders and sales on this device are deleted. Make a backup first if you need them.'), t('Erase'), true))) return;
-      Link.disconnectAll(); await Store.resetAll(); Setup.restart(); App.applyLook(); UI.go('tour');
-    });
     el.querySelectorAll('[data-theme-set]').forEach((b) => { b.onclick = () => { Store.setLocal({ theme: b.dataset.themeSet }); App.applyLook(); }; });
     el.querySelectorAll('[data-size]').forEach((b) => { b.onclick = () => { Store.setLocal({ textSize: +b.dataset.size }); App.applyLook(); }; });
   };
 
+  // Admin: owner-only settings, behind Face ID / fingerprint or the admin PIN.
+  const adminView = (el) => {
+    document.body.classList.remove('no-tabs');
+    const s = Store.settings(); const L = Store.local;
+    if (!Lock.isOpen()) {
+      el.innerHTML = `
+        ${UI.header(t('Admin'), { back: 'more' })}
+        <div class="page">
+          <section class="card locked center">
+            <div class="lock-mark">${UI.icon('lock')}</div>
+            <h2>${t('Admin is locked')}</h2>
+            <p class="muted">${Lock.hasBio() ? t('Use {name}, or your admin PIN.', { name: Lock.bioName() }) : t('Enter your admin PIN.')}</p>
+            <button class="btn primary block" data-act="unlock">${Lock.hasBio() ? t('Unlock with {name}', { name: Lock.bioName() }) : t('Unlock')}</button>
+            ${Lock.hasBio() ? `<button class="btn ghost block" data-act="unlock-pin">${t('Use PIN instead')}</button>` : ''}
+          </section>
+        </div>`;
+      const go = (pinOnly) => Lock.verify(t('Admin PIN'), { pinOnly }).then((ok) => { if (ok) adminView(el); else if (!pinOnly && Lock.hasBio()) UI.toast(t('Not recognised. Try again or use your PIN.'), 'bad'); });
+      el.querySelector('[data-act=unlock]').onclick = () => go(false);
+      const p = el.querySelector('[data-act=unlock-pin]'); if (p) p.onclick = () => go(true);
+      return;
+    }
+    const lastBk = L.lastBackupAt ? Util.dateTime(L.lastBackupAt, s.locale) : t('never');
+    const payKind = PayQR.kind(s);
+    el.innerHTML = `
+      ${UI.header(t('Admin'), { back: 'more', actions: Lock.isSet() ? `<button class="btn ghost small" data-act="lock">${UI.icon('lock')} ${t('Lock')}</button>` : '' })}
+      <div class="page settings">
+        ${Lock.isSet() ? `<p class="muted small">${t('Unlocked. Locks again in {n} min.', { n: Lock.minutesLeft() })}</p>`
+          : `<p class="banner warn">${t('Anyone can open this screen. Set an admin PIN below, then turn on {name}.', { name: Lock.bioName() })}</p>`}
+        <section class="set-group"><h2>${t('Restaurant')}</h2>
+          ${row('brand', t('Restaurant details'), Util.esc(s.brandName) + (s.address ? ' · ' + Util.esc(s.address) : ''))}
+          ${row('money', t('Prices and tax'), `${Util.esc(s.currency)} · ${s.taxes.length ? s.taxes.map((x) => Util.esc(x.name) + ' ' + x.rate + '%').join(', ') : t('no tax')}${s.serviceCharge ? ' · ' + t('service') + ' ' + s.serviceCharge + '%' : ''}`)}
+          ${row('payments', t('Payments'), payKind === 'upi' ? t('UPI QR to {id}', { id: Util.esc(s.upiId) }) : payKind === 'image' ? t('Your payment QR') : t('Not set: add a UPI ID or payment QR'), 'qr')}
+          ${row('tables', t('Tables'), t('{n} tables', { n: s.tables.length }))}
+          <a class="set-row" href="#menu"><span class="grow"><b>${t('Menu')}</b><small>${t('{n} dishes', { n: Store.items().length })}</small></span>${UI.icon('chevron')}</a>
+          <a class="set-row" href="#reports"><span class="grow"><b>${t('Sales')}</b><small>${t('Daily sales, best sellers, voids')}</small></span>${UI.icon('chevron')}</a>
+        </section>
+        <section class="set-group"><h2>${t('Security')}</h2>
+          ${row('pin', t('Admin PIN'), L.pin ? t('On · needed for admin, voids, discounts, price changes') : t('Off'), 'lock')}
+          ${row('bio', Lock.bioName().replace(/^./, (c) => c.toUpperCase()), Lock.hasBio() ? t('On for this device') : L.pin ? t('Off · tap to turn on') : t('Set an admin PIN first'), 'lock')}
+          <p class="hint pad">${t('This is a lock on the screen, not encryption. Each device has its own face or fingerprint setting; the PIN works everywhere.')}</p>
+        </section>
+        <section class="set-group"><h2>${t('Data')}</h2>
+          ${row('backup', t('Back up now'), t('Last backup: {when}', { when: lastBk }), 'download')}
+          ${row('restore', t('Restore from a backup'), t('Choose a backup file'), 'upload')}
+          ${row('reset', t('Erase all data on this device'), '', 'trash')}
+        </section>
+      </div>`;
+    const on = (a, fn) => { const b = el.querySelector(`[data-act=${a}]`); if (b) b.onclick = fn; };
+    on('lock', () => { Lock.lock(); UI.toast(t('Admin locked')); UI.go('more'); });
+    on('brand', brandSheet);
+    on('money', moneySheet);
+    on('payments', PayQR.settingsSheet);
+    on('tables', tablesSheet);
+    on('pin', pinSheet);
+    on('bio', bioToggle);
+    on('backup', Share.backupNow);
+    on('restore', Share.importFile);
+    on('reset', async () => {
+      if (!(await UI.requirePin(t('Admin PIN to erase')))) return;
+      if (!(await UI.confirm(t('Erase everything on this device?'), t('Menu, orders and sales on this device are deleted. Make a backup first if you need them.'), t('Erase'), true))) return;
+      Link.disconnectAll(); Lock.lock(); await Store.resetAll(); Setup.restart(); App.applyLook(); UI.go('tour');
+    });
+  };
+
   UI.route('more', view); // not '#settings': claude.ai reserves that hash when mirrored as an artifact
+  UI.route('admin', adminView);
   return { selfCheck };
 })();

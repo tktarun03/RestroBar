@@ -26,11 +26,12 @@ const Setup = (() => {
       currency: s.updatedAt ? s.currency : guessCurrency(),
       taxes: s.taxes.length ? JSON.parse(JSON.stringify(s.taxes)) : [],
       taxInclusive: s.taxInclusive, serviceCharge: s.serviceCharge,
-      tableCount: s.tables.length || 8, tablePrefix: 'Table '
+      tableCount: s.tables.length || 8, tablePrefix: 'Table ',
+      upiId: s.upiId, payQr: s.payQr
     };
   };
 
-  const stepsFor = (role) => role === 'waiter' ? ['role', 'device', 'join'] : ['role', 'brand', 'money', 'tables', 'review'];
+  const stepsFor = (role) => role === 'waiter' ? ['role', 'device', 'join'] : ['role', 'brand', 'money', 'payments', 'tables', 'review'];
 
   // ---------- tour ----------
   const SLIDES = [
@@ -164,6 +165,21 @@ const Setup = (() => {
         </div>
         <label class="toggle"><input type="checkbox" id="f-incl" ${d.taxInclusive ? 'checked' : ''}><span>${t('Menu prices already include tax')}</span></label>
         <label class="field"><span>${t('Service charge %')}</span><input id="f-service" class="input" inputmode="decimal" value="${Util.esc(d.serviceCharge || '')}" placeholder="0"></label>`;
+      case 'payments': return `
+        <h1>${t('Customer payments')}</h1>
+        <p class="muted">${t('Optional. Customers scan a QR code on the bill to pay. You can add or change this later in Settings → Admin.')}</p>
+        ${d.currency === 'INR' ? `
+          <label class="field"><span>${t('UPI ID for GPay, PhonePe, Paytm')}</span>
+            <input id="f-upi" class="input" value="${Util.esc(d.upiId)}" placeholder="98xxxxxx@okaxis" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="email"></label>
+          <p class="hint">${t('Find it in GPay → your profile → UPI ID. A phone number alone is not a UPI ID. The bill QR fills in the amount for the customer.')}</p>`
+        : `<p class="hint">${t('UPI (GPay, PhonePe) works only with INR prices. You can upload your bank or wallet payment QR instead.')}</p>`}
+        <div class="field"><span>${d.currency === 'INR' ? t('Or upload your own payment QR') : t('Upload your payment QR')}</span>
+          <div class="row gap center">
+            <div class="logo-preview qr-thumb">${d.payQr ? `<img src="${d.payQr}" alt="">` : UI.icon('qr')}</div>
+            <label class="btn ghost">${UI.icon('upload')} ${t('Upload image')}<input type="file" id="f-payqr" accept="image/*" hidden></label>
+            ${d.payQr ? `<button class="btn link" data-act="nopayqr">${t('Remove')}</button>` : ''}
+          </div>
+        </div>`;
       case 'tables': return `
         <h1>${t('Tables')}</h1>
         <p class="muted">${t('You can rename, add or remove tables later in Settings.')}</p>
@@ -205,6 +221,7 @@ const Setup = (() => {
     view.querySelectorAll('[data-tax-name]').forEach((el) => { draft.taxes[+el.dataset.taxName].name = el.value.trim(); });
     view.querySelectorAll('[data-tax-rate]').forEach((el) => { draft.taxes[+el.dataset.taxRate].rate = Math.max(0, parseFloat(el.value) || 0); });
     if (v('f-tprefix') !== undefined) draft.tablePrefix = v('f-tprefix');
+    if (v('f-upi') !== undefined) draft.upiId = v('f-upi').trim();
   };
 
   const wizard = (view) => {
@@ -234,6 +251,7 @@ const Setup = (() => {
       readStep(view);
       if (name === 'brand' && !draft.brandName) { UI.toast(t('Enter your restaurant name'), 'bad'); return; }
       if (name === 'money' && draft.taxes.some((x) => !x.name && x.rate)) { UI.toast(t('Give each tax a name'), 'bad'); return; }
+      if (name === 'payments' && draft.upiId && !PayQR.validUpi(draft.upiId)) { UI.toast(t('That is not a UPI ID. It looks like name@bank.'), 'bad'); return; }
       if (name === 'device' && !draft.deviceName) { UI.toast(t('Enter a name for this phone'), 'bad'); return; }
       step++; wizard(view);
     });
@@ -243,6 +261,9 @@ const Setup = (() => {
     const logo = view.querySelector('#f-logo');
     if (logo) logo.onchange = async () => { readStep(view); const f = logo.files[0]; if (f) { draft.logo = await shrinkImage(f, 256); wizard(view); } };
     on('nologo', () => { readStep(view); draft.logo = ''; wizard(view); });
+    const pq = view.querySelector('#f-payqr');
+    if (pq) pq.onchange = async () => { readStep(view); const f = pq.files[0]; if (f) { draft.payQr = await shrinkImage(f, 600); wizard(view); } };
+    on('nopayqr', () => { readStep(view); draft.payQr = ''; wizard(view); });
     on('addtax', () => { readStep(view); draft.taxes.push({ name: '', rate: 0 }); wizard(view); });
     view.querySelectorAll('[data-tax-del]').forEach((b) => { b.onclick = () => { readStep(view); draft.taxes.splice(+b.dataset.taxDel, 1); wizard(view); }; });
     on('tminus', () => { readStep(view); draft.tableCount = Math.max(1, draft.tableCount - 1); wizard(view); });
@@ -263,7 +284,8 @@ const Setup = (() => {
     Store.saveSettings({
       brandName: d.brandName || 'My Restaurant', logo: d.logo, accent: d.accent,
       currency: d.currency, taxes: d.taxes.filter((x) => x.name || x.rate), taxInclusive: d.taxInclusive,
-      serviceCharge: d.serviceCharge, tables
+      serviceCharge: d.serviceCharge, tables,
+      upiId: d.currency === 'INR' ? d.upiId : '', payQr: d.payQr
     });
     Store.setLocal({ role: d.role, deviceName: d.deviceName || ({ hub: 'Kitchen tablet', solo: 'Main device' }[d.role] || 'Device'), setupDone: true, tourDone: true, seenVersion: APP_VERSION, demo: withDemo });
     if (withDemo) Demo.loadMenu();

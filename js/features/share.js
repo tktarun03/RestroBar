@@ -119,7 +119,7 @@ const Share = (() => {
       });
       if (!choice) return false;
       if (choice === 'replace') {
-        if (!(await UI.requirePin(t('Manager PIN to restore')))) return false;
+        if (!(await UI.requirePin(t('Admin PIN to restore')))) return false;
         await Store.restore(data); UI.toast(t('Backup restored'), 'good'); App.applyLook(); return true;
       }
       const sh = data.shared;

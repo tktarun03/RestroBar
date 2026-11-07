@@ -103,16 +103,10 @@ const UI = (() => {
     });
   });
 
-  // Manager PIN gate. Resolves true when no PIN is set.
-  const requirePin = async (why) => {
-    const pin = Store.local.pin;
-    if (!pin) return true;
-    const v = await ask(why || t('Manager PIN'), { type: 'password', inputmode: 'numeric', okLabel: t('Unlock') });
-    if (v === null) return false;
-    if (v === pin) return true;
-    toast(t('Wrong PIN'), 'bad');
-    return false;
-  };
+  // Admin PIN gate. Resolves true when no PIN is set.
+  // Admin gate for voids, discounts, price changes: Face ID / fingerprint, else PIN (see Lock).
+  // Resolves true when no lock is set.
+  const requirePin = (why) => Lock.verify(why);
 
   // ---------- router (hash) ----------
   const routes = {};

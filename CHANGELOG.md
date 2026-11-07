@@ -2,6 +2,15 @@
 
 Newest first. Every release also gets an entry in `RELEASES` in `js/core/version.js` (shown in the app under Settings → Version history).
 
+## 0.1.3 (2026-11-07)
+
+- Payment QR (`js/features/payqr.js`): `upi://pay` link with payee, amount and note for INR (GPay, PhonePe, Paytm), or an uploaded payment QR image for any currency. Shown under the "UPI / GPay" (or "Online / QR") payment method, full screen for the customer, and optionally printed on unpaid bills. Staff confirm receipt manually.
+- New setup step "Customer payments"; validation refuses a bare phone number as a UPI ID.
+- Admin screen (`#admin`) with restaurant, prices, payments, tables, menu, sales, security and data. Settings keeps everyday items.
+- Admin lock (`js/features/lock.js`): passkey with platform authenticator (Face ID / Touch ID / fingerprint) checked for user verification, admin PIN as mandatory fallback, 5-minute unlock. Voids, discounts and price changes use the same lock. Renamed "manager PIN" to "admin PIN".
+- New settings fields with migrate() defaults: `upiId`, `upiName`, `payQr`, `payQrOnBill`; local `passkeyId`.
+- Tests: UPI link format, UPI ID validation, admin lock with Chrome's virtual authenticator (Face ID pass and fail, PIN fallback).
+
 ## 0.1.2 (2026-11-07)
 
 - Zoom disabled: viewport `user-scalable=no`, plus blocked iOS gesture events, two-finger touchmove, ctrl+wheel and ctrl +/-; `touch-action: manipulation` stops double-tap zoom. Text size setting is the replacement.

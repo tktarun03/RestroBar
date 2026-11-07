@@ -19,6 +19,7 @@ Stored in IndexedDB (`restrobar` → `kv` store), two keys. Falls back to localS
     brandName, logo /* data: URL, ≤256px */, accent /* #hex */, address, phone, taxNo, footer,
     currency /* ISO 4217 */, locale /* '' = device */, taxes: [{ name, rate /* % */ }],
     taxInclusive, serviceCharge /* % */, tables: [{ id, name }],
+    upiId, upiName, payQr /* data: URL */, payQrOnBill,
     updatedAt, updatedBy
   },
   categories: { [id]: { id, name, sort, deleted?, updatedAt, updatedBy } },
@@ -43,7 +44,7 @@ Dish name and price are copied onto each order line, so editing or deleting a me
 
 ### `local` (this device only)
 
-`deviceId, deviceName, role (solo|hub|waiter), theme, textSize, pin, billSeq, deviceCode, setupDone, tourDone, seenVersion, checklistHidden, lastBackupAt, lang, sound, demo, everLinked, knownPeers`.
+`deviceId, deviceName, role (solo|hub|waiter), theme, textSize, pin, passkeyId, billSeq, deviceCode, setupDone, tourDone, seenVersion, checklistHidden, lastBackupAt, lang, sound, demo, everLinked, knownPeers`.
 
 ## Order lifecycle
 

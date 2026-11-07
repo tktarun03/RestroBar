@@ -43,6 +43,7 @@ const Tables = (() => {
       [t('Send an order to the kitchen'), orders.some((o) => o.lines.some((l) => l.status !== 'draft')), ''],
       [t('Take a first payment'), orders.some((o) => o.status === 'paid'), ''],
       ...(L.role === 'solo' ? [] : [[t('Link a phone to the kitchen tablet'), L.everLinked, '#links']]),
+      [t('Lock the admin screen'), Lock.isSet(), '#admin'],
       [t('Make a backup'), !!L.lastBackupAt, '#more']
     ];
     const done = steps.filter((s) => s[1]).length;

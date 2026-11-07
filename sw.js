@@ -1,6 +1,6 @@
 // Offline support. VERSION must equal APP_VERSION (tests check it).
 // The page itself is network-first (so updates arrive), versioned assets are cache-first.
-const VERSION = '0.1.2';
+const VERSION = '0.1.3';
 const CACHE = 'restrobar-' + VERSION;
 const V = '?v=' + VERSION;
 const ASSETS = [
@@ -9,7 +9,7 @@ const ASSETS = [
   'lib/qrcode-1.4.4.js' + V, 'lib/jsQR-1.4.0.js' + V,
   'js/core/version.js' + V, 'js/core/util.js' + V, 'js/core/i18n.js' + V, 'js/core/billing.js' + V, 'js/core/store.js' + V,
   'js/ui/ui.js' + V,
-  'js/features/qr.js' + V, 'js/features/share.js' + V, 'js/features/link.js' + V, 'js/features/setup.js' + V,
+  'js/features/lock.js' + V, 'js/features/payqr.js' + V, 'js/features/qr.js' + V, 'js/features/share.js' + V, 'js/features/link.js' + V, 'js/features/setup.js' + V,
   'js/features/tables.js' + V, 'js/features/order.js' + V, 'js/features/kitchen.js' + V, 'js/features/bill.js' + V,
   'js/features/menu.js' + V, 'js/features/reports.js' + V, 'js/features/settings.js' + V,
   'js/app.js' + V,

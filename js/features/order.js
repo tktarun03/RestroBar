@@ -74,7 +74,7 @@ const OrderView = (() => {
         on('served', () => { Tables.markServed(orderId, [lineId]); close(); });
         on('void', async () => {
           close();
-          if (!(await UI.requirePin(t('Manager PIN to void')))) return;
+          if (!(await UI.requirePin(t('Admin PIN to void')))) return;
           const why = await UI.ask(t('Reason for voiding'), { placeholder: t('e.g. customer changed mind'), okLabel: t('Void item') });
           if (why === null) return;
           Store.updateOrder(orderId, (d) => { const x = d.lines.find((y) => y.id === lineId); if (x) { x.status = 'void'; x.voidReason = why.trim(); x.voidAt = Util.now(); x.voidBy = Store.local.deviceName; } });
@@ -102,7 +102,7 @@ const OrderView = (() => {
         on('share', () => Share.sendOrder(orderId));
         on('cancel', async () => {
           const sent = o.lines.some((l) => l.status !== 'draft' && l.status !== 'void');
-          if (sent && !(await UI.requirePin(t('Manager PIN to cancel')))) return;
+          if (sent && !(await UI.requirePin(t('Admin PIN to cancel')))) return;
           if (!(await UI.confirm(t('Cancel this order?'), sent ? t('Dishes already sent to the kitchen will be voided.') : '', t('Cancel order'), true))) return;
           Store.updateOrder(orderId, (d) => {
             d.status = 'void';

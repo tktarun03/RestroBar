@@ -1,7 +1,7 @@
 // Billing: discount, split payments, change, close the bill, print and share the receipt.
 // Route: #bill-<orderId>
 const Bill = (() => {
-  const METHODS = () => [['cash', t('Cash')], ['card', t('Card')], ['online', t('Online')], ['other', t('Other')]];
+  const METHODS = () => [['cash', t('Cash')], ['card', t('Card')], ['online', PayQR.kind(Store.settings()) === 'upi' ? t('UPI / GPay') : t('Online / QR')], ['other', t('Other')]];
   const methodName = (m) => (METHODS().find((x) => x[0] === m) || [m, m])[1];
 
   const receiptHtml = (o, s) => {
@@ -35,9 +35,11 @@ const Bill = (() => {
           ${o.payments.map((p) => `<div class="r-row"><span>${methodName(p.method)}</span><span>${Util.money(p.amount, s)}</span></div>`).join('')}
           ${b.change ? `<div class="r-row"><span>${t('Change')}</span><span>${Util.money(b.change, s)}</span></div>` : ''}
         </div>
+        ${!paid && s.payQrOnBill && PayQR.kind(s) && b.due > 0 ? `<div class="r-pay">${PayQR.box(s, b.due, billNote(o))}</div>` : ''}
         ${s.footer ? `<div class="r-foot">${Util.esc(s.footer)}</div>` : ''}
       </div>`;
   };
+  const billNote = (o) => { const tb = Store.table(o.tableId); return (tb ? tb.name : '') + ' ' + Util.time(Util.now()); };
 
   // Plain-text receipt for sharing in a message.
   const receiptText = (o, s) => {
@@ -70,7 +72,7 @@ const Bill = (() => {
   };
 
   const discountSheet = async (o) => {
-    if (!(await UI.requirePin(t('Manager PIN for discount')))) return;
+    if (!(await UI.requirePin(t('Admin PIN for discount')))) return;
     const s = Store.settings();
     const d = o.discount || { type: 'amt', value: 0 };
     UI.open(`
@@ -150,7 +152,12 @@ const Bill = (() => {
                 <div class="seg methods">${METHODS().map(([k, label]) => `<button class="${payState.method === k ? 'on' : ''}" data-method="${k}">${label}</button>`).join('')}</div>
                 <label class="field"><span>${t('Amount received')}</span><input id="p-amt" class="input mono" inputmode="decimal" value="${Util.amountStr(b.due, s.currency)}"></label>
                 ${payState.method === 'cash' ? `<div class="chips">${cashSuggestions(b.due, s.currency).map((v) => `<button class="chip-btn" data-cash="${v}">${Util.money(v, s)}</button>`).join('')}</div>` : ''}
-                <button class="btn primary block" data-act="pay">${t('Add payment')}</button>` : ''}
+                ${payState.method === 'online' ? (PayQR.kind(s) ? `
+                  ${PayQR.box(s, b.due, billNote(o))}
+                  <button class="btn ghost block" data-act="show-qr">${UI.icon('qr')} ${t('Show big to the customer')}</button>
+                  <p class="hint">${t('Check the money arrived in your payment app before tapping Received.')}</p>`
+                  : `<p class="banner">${t('No payment QR yet. Add your UPI ID or payment QR in Settings → Admin → Payments.')}</p>`) : ''}
+                <button class="btn primary block" data-act="pay">${payState.method === 'online' ? t('Received') : t('Add payment')}</button>` : ''}
               ${o.payments.length ? `
                 <ul class="pay-list">${o.payments.map((p, i) => `<li><span>${methodName(p.method)}</span><span class="mono">${Util.money(p.amount, s)}</span><button class="icon-btn" data-unpay="${i}" aria-label="${t('Remove payment')}">${UI.icon('x')}</button></li>`).join('')}</ul>` : ''}
               ${b.change ? `<div class="due-box change"><small>${t('Give change')}</small><b class="mono">${Util.money(b.change, s)}</b></div>` : ''}
@@ -182,11 +189,12 @@ const Bill = (() => {
       });
       UI.toast(t('Bill {no} closed', { no: billNo }), 'good');
     });
+    on('show-qr', () => PayQR.showToCustomer(Util.toMinor(parseFloat(el.querySelector('#p-amt').value) || 0, s.currency) || b.due, billNote(o)));
     on('print', () => print());
     on('share', () => Share.sendBill(orderId));
     on('share2', () => Share.sendBill(orderId));
     on('reopen', async () => {
-      if (!(await UI.requirePin(t('Manager PIN to reopen')))) return;
+      if (!(await UI.requirePin(t('Admin PIN to reopen')))) return;
       if (Store.openOrderFor(o.tableId)) { UI.toast(t('That table already has a new order'), 'bad'); return; }
       if (!(await UI.confirm(t('Reopen this bill?'), t('The table becomes busy again and the payment stays recorded.'), t('Reopen')))) return;
       Store.updateOrder(orderId, (d) => { d.status = 'open'; d.reopenedFrom = d.billNo; });

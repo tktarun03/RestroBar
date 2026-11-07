@@ -90,6 +90,10 @@ const Store = (() => {
     taxInclusive: false,
     serviceCharge: 0,
     tables: [],          // [{id, name}]
+    upiId: '',           // UPI ID for GPay/PhonePe/Paytm QR (INR only), e.g. name@okaxis
+    upiName: '',         // payee name shown in the UPI app ('' = brand name)
+    payQr: '',           // owner's own payment QR image (data: URL), any currency
+    payQrOnBill: true,   // print the payment QR on unpaid bills
     updatedAt: 0,
     updatedBy: ''
   });
@@ -133,6 +137,7 @@ const Store = (() => {
     lo.demo = !!lo.demo;
     lo.everLinked = !!lo.everLinked;
     lo.knownPeers = lo.knownPeers || {};  // deviceId → name, for reconnect hints
+    lo.passkeyId = lo.passkeyId || '';    // Face ID / fingerprint credential for the admin lock (this device only)
     return { sh, lo };
   };
 

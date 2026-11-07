@@ -461,6 +461,24 @@ body.no-tabs .toast { bottom: calc(88px + var(--sab)); }
 .pair-grid { display: grid; gap: 12px; }
 @media (min-width: 640px) { .pair-grid { grid-template-columns: 1fr 1fr; align-items: center; } }
 
+/* ---------- payment QR + admin ---------- */
+.pay-qr { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.pay-qr .qr-box { width: 100%; max-width: 240px; padding: 8px; }
+.pay-qr .qr-box img { width: 100%; height: auto; image-rendering: pixelated; }
+.pay-qr b { font-size: 1.4rem; }
+.pay-qr small { max-width: 34ch; }
+.pay-qr.big .qr-box { max-width: 340px; }
+.pay-qr.big b { font-size: 2rem; }
+.receipt .pay-qr { border-color: var(--paper-line); background: transparent; color: inherit; font-family: var(--font-ui); }
+.receipt .pay-qr .qr-box { max-width: 150px; }
+.bill-page .r-pay { display: none; } /* shown on the printed bill only; the screen has its own QR */
+.qr-thumb { background: var(--surface-2); color: var(--muted); }
+.qr-thumb img { object-fit: contain; background: #fff; }
+.card.locked { align-items: center; padding: 28px 20px; gap: 12px; max-width: 420px; margin-inline: auto; width: 100%; }
+.lock-mark { width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.lock-mark .ic { width: 30px; height: 30px; }
+.admin-row .ic { color: var(--accent); }
+
 /* ---------- splash ---------- */
 #splash { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: grid; place-items: center; transition: opacity .3s; }
 #splash.gone { opacity: 0; pointer-events: none; }
@@ -473,6 +491,7 @@ body.no-tabs .toast { bottom: calc(88px + var(--sab)); }
   body.printing #tabs, body.printing .top, body.printing .bill-pay, body.printing .banner, body.printing #toast { display: none !important; }
   body.printing #view { overflow: visible; }
   body.printing .receipt { box-shadow: none; max-width: 76mm; margin: 0 auto; background: #fff; color: #000; }
+  body.printing .bill-page .r-pay { display: block; }
 }
 
 /* ---------- phone held sideways: tabs become a side rail, bars get shorter ---------- */

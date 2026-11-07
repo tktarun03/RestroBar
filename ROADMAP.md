@@ -16,7 +16,7 @@
 - [ ] Bluetooth / network thermal printer support (ESC/POS) for KOT and receipts.
 - [ ] Arabic translation with right-to-left layout (CSS already uses logical properties). Mark machine translation as needing native review.
 - [ ] Archive paid orders older than N months to keep storage small.
-- [ ] Staff accounts with roles instead of one manager PIN.
+- [ ] Staff accounts with roles instead of one admin PIN.
 - [ ] Modifiers and add-ons with prices (extra cheese +3).
 
 ## Decisions log
@@ -34,3 +34,5 @@
 | 2026-11-07 | Vendor QR libraries and fonts instead of CDN | Must work offline and send nothing to third parties. Versions pinned in file names. |
 | 2026-11-07 | English only in v0.1 | Owner did not choose languages; translation table and logical CSS are in place. |
 | 2026-11-07 | Pinch and double-tap zoom disabled | Owner's request for shared work devices. Trade-off: worse for low vision; mitigated by the in-app Text size setting, tested at 320px. |
+| 2026-11-07 | Payment QR: UPI link for INR, uploaded image otherwise | Owner asked for GPay. UPI only works in INR; restaurant may bill in QAR. No payment gateway, so payment is confirmed by staff. |
+| 2026-11-07 | Admin lock = device passkey (Face ID / fingerprint) + PIN fallback | Owner asked for face lock. No server to verify signatures, so it is a screen lock; the PIN must always work. |

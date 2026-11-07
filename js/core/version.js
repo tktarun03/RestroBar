@@ -1,10 +1,20 @@
 // Single source of truth for the release number.
 // Must match ?v= on every CSS/JS link in index.html, VERSION in sw.js,
 // and the top entry of CHANGELOG.md (tests/structure.test.mjs checks all four).
-const APP_VERSION = '0.1.2';
+const APP_VERSION = '0.1.3';
 
 // Newest first. Shown in Settings → Version history and the "What's new" notice.
 const RELEASES = [
+  {
+    version: '0.1.3',
+    date: '2026-11-07',
+    notes: [
+      'Customers can pay by scanning a QR on the bill: a UPI code for GPay, PhonePe and Paytm with the amount filled in (INR), or your own payment QR for any currency.',
+      'Setup asks for your UPI ID or payment QR; change it later in Settings → Admin → Payments.',
+      'New Admin screen for restaurant details, prices, payments, tables, menu, sales and data.',
+      'Lock Admin with Face ID, Touch ID or fingerprint, with your admin PIN as the backup.'
+    ]
+  },
   {
     version: '0.1.2',
     date: '2026-11-07',
